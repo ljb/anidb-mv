@@ -1,69 +1,49 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-"""amv"""
-
+import argparse
 import os
-import shutil
+from configparser import ConfigParser
+from hashing import ed2k_of_path
+from protocol import register_files
 
-from register import Register
-from aregister import RegisterParser
+def parse_args():
+    parser = argparse.ArgumentParser(description='Move and register files on anidb')
+    parser.add_argument('-W', '--not-watched', action='store_false', default=True,
+                        help='If the files have not been watched')
+    parser.add_argument('files', nargs='+', help='The files to move and register')
+    parser.add_argument('dir', help='The directory to move the files to')
+    return parser.parse_args()
 
+def get_username_and_password():
+    parser = ConfigParser()
+    parser.read(os.path.expanduser('~/.amvrc'))
+    return parser.get('anidb', 'username'), parser.get('anidb', 'password')
 
-class MvParser(RegisterParser):
-    """"Parse switches specific for amv"""
-    def __init__(self, usage="%prog [OPTION] FILES DIR",
-                 version="%prog v0.01"):
-        RegisterParser.__init__(self, usage=usage, version=version)
+def get_files_to_register(files):
+    files_to_register = set()
+    for arg_file in files:
+        if os.path.isdir(arg_file):
+            for root, _, files in os.walk(arg_file):
+                files_to_register.update([os.path.join(root, fname) for fname in files])
+        else:
+            files_to_register.add(arg_file)
 
-    def parse_args(self, args=None, values=None):
-        flags, fnames = RegisterParser.parse_args(self, args, values)
-        if len(fnames) < 2:
-            self.error("At least two arguments are required")
-        elif not os.path.isdir(fnames[-1]):
-            self.error("The last argument is not a directory")
-        return flags, fnames[:-1], fnames[-1]
+    return files_to_register
 
-
-def register_file(fname, flags, register, successes, failures):
-    """
-    Register fname on register using the specified flags. Append it to the list
-    successes if it was succesfull and to failures if it failed.
-    """
-    response = register.register(fname, flags.viewed, flags.state,
-                                 flags.mtime, flags.edit)
-    if response.rescode in ["210", "311"]:
-        successes.append(fname)
-    else:
-        failures.append(fname)
-
+def get_file_infos(files):
+    return [{
+        'path': fname,
+        'size': os.path.getsize(fname),
+        'ed2k': ed2k_of_path(fname)
+    } for fname in files]
 
 def main():
-    """Main function"""
-    flags, args, dirname = MvParser().parse_args()
-    register = Register()
-    successes = []
-    failures = []
+    args = parse_args()
+    files_to_register = get_files_to_register(args.files)
+    file_infos = get_file_infos(files_to_register)
+    username, password = get_username_and_password()
+    no_such_files = register_files(username, password, file_infos)
+    print(no_such_files)
 
-    for arg in args:
-        if os.path.isdir(arg):
-            for dirpath, _, fnames in os.walk(arg):
-                for fname in fnames:
-                    path = os.path.join(dirpath, fname)
-                    register_file(path, flags, register, successes, failures)
-        else:
-            register_file(arg, flags, register, successes, failures)
-    register.close()
-
-    if successes:
-        print "Moving files that were registered"
-        for fname in successes:
-            print "%s -> %s" % (fname, dirname)
-            shutil.move(fname, dirname)
-
-    if failures:
-        print "Files that failed to get registered:"
-        for fname in failures:
-            print fname
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -1,0 +1,2 @@
+class AnidbProtocolException(Exception):
+    pass
