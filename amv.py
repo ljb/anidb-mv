@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+# import json
 import os
+import sys
 from configparser import ConfigParser
-from hashing import ed2k_of_path
 from protocol import register_files
 
 def parse_args():
@@ -14,10 +15,24 @@ def parse_args():
     parser.add_argument('dir', help='The directory to move the files to')
     return parser.parse_args()
 
-def get_username_and_password():
+def read_config():
+    config_path = os.path.expanduser('~/.amvrc')
+    if not os.path.exists(config_path):
+        print("No config file exists at {}."
+              "Create one with the following format:"
+              "[anidb]"
+              "local_port=9000"
+              "username=myusername"
+              "password=mypassword")
+        sys.exit(1)
+
     parser = ConfigParser()
-    parser.read(os.path.expanduser('~/.amvrc'))
-    return parser.get('anidb', 'username'), parser.get('anidb', 'password')
+    parser.read(config_path)
+    return {
+        'username': parser.get('anidb', 'username'),
+        'password': parser.get('anidb', 'password'),
+        'local_port': parser.getint('anidb', 'local_port')
+    }
 
 def get_files_to_register(files):
     files_to_register = set()
@@ -30,20 +45,11 @@ def get_files_to_register(files):
 
     return files_to_register
 
-def get_file_infos_iterator(files):
-    for fname in files:
-        yield {
-            'path': fname,
-            'size': os.path.getsize(fname),
-            'ed2k': ed2k_of_path(fname)
-        }
-
 def main():
     args = parse_args()
-    files_to_register = get_files_to_register(args.files)
-    file_infos_iterator = get_file_infos_iterator(files_to_register)
-    username, password = get_username_and_password()
-    no_such_files = register_files(username, password, file_infos_iterator)
+    files = get_files_to_register(args.files)
+    config = read_config()
+    no_such_files = register_files(config, files)
     print(no_such_files)
 
 if __name__ == '__main__':

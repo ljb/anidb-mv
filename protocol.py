@@ -1,163 +1,144 @@
 #!/usr/bin/env python
 
 import os
+import signal
+import socket
 import time
-import messages
-from exceptions import AnidbProtocolException
+from threading import Event, Thread
+from queue import Queue
+
 from hashing import ed2k_of_path
+import messages
+import exceptions
 
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
-from twisted.protocols.policies import TimeoutMixin
-from twisted.internet.defer import DeferredQueue, inlineCallbacks
-
-EXTENDED_PERIOD_OF_TIME = 30
+CLIENT_NAME = 'amv'
+EXTENDED_PERIOD_OF_TIME = 60
 #ANIDB_HOST = 'api.anidb.net'
 ANIDB_HOST = 'localhost'
 ANIDB_PORT = 9000
-TIMEOUT = 120
+TIMEOUT = 30
 
-#pylint: disable=no-member
-class AnidbClientProtocol(DatagramProtocol, TimeoutMixin):
-    def __init__(self, username, password):
-        self._username = username
-        self._password = password
+class UdpClient(object):
+    def __init__(self, config, shutdown_event, file_info_queue):
+        self._config = config
+        self._shutdown_event = shutdown_event
+        self._file_info_queue = file_info_queue
+        self._socket = None
         self._nr_free_packets = 5
         self._start_time = None
-        self._logged_in = False
-        self.setTimeout(TIMEOUT)
+
+    def __enter__(self):
+        self._start_time = time.time()
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._socket.bind((ANIDB_HOST, self._config['local_port']))
+        self._socket.settimeout(TIMEOUT)
+        self._login()
+        return self
+
+    def __exit__(self, *_):
+        self._shutdown_event.set()
+        self._logout()
 
     def _get_delay_and_decrease_counter(self):
-        delay = 30 if self._nr_free_packets <= 0 or self._extended_period_of_time() else 0
-        self._nr_free_packets -= 1
-        print(delay)
-        return delay
+        if self._nr_free_packets > 0:
+            self._nr_free_packets -= 1
+            return 0
+        elif self._extended_period_of_time():
+            return 4
+        else:
+            return 2
 
     def _extended_period_of_time(self):
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
 
-    def _verify_logged_in_response(self, response):
-        if response['number'] not in [200, 201]:
-            self.raise_error(response)
-        self._logged_in = True
+    def _send_with_delay(self, datagram):
+        print("Sending {}".format(datagram))
+        delay = self._get_delay_and_decrease_counter()
+        time.sleep(delay)
+        self._socket.sendto(datagram, (ANIDB_HOST, ANIDB_PORT))
 
-    @inlineCallbacks
-    def _shutdown(self):
-        yield self.transport.loseConnection()
-        reactor.stop()
-
-    @inlineCallbacks
-    def timeoutConnection(self):
-        print("Timed out waiting for reply")
-        yield self._shutdown()
-
-    @inlineCallbacks
-    def stopProtocol(self):
-        print("Shuting down")
-        yield self._shutdown()
-
-    @inlineCallbacks
-    def startProtocol(self):
-        print("Start protocol")
-        self._start_time = time.time()
-        ip_address = yield reactor.resolve(ANIDB_HOST)
-        print(ip_address)
-        print(ANIDB_PORT)
-        self.transport.connect(ip_address, ANIDB_PORT)
-        yield self.send_with_delay(messages.auth_message(self._username, self._password))
-
-    @inlineCallbacks
-    def datagramReceived(self, datagram, _):
-        print("Datagram received")
-        self.resetTimeout()
-        try:
-            response = messages.parse_message(datagram)
-            if self._logged_in:
-                self._verify_logged_in_response(response)
-            else:
-                yield self.handle_response(response)
-        except AnidbProtocolException as exception:
-            print(exception)
-            yield self._shutdown()
-
-    @inlineCallbacks
-    def send_with_delay(self, datagram):
-        print(datagram)
-        yield reactor.callLater(
-            self._get_delay_and_decrease_counter(),
-            self.transport.write,
-            datagram
-        )
+    def _receive(self):
+        datagram, _ = self._socket.recvfrom(4096)
+        return messages.parse_message(datagram)
 
     @staticmethod
-    def raise_error(response):
+    def _raise_error(response):
         msg = 'Received unknown response "{number} {string}" in response to login'.format(
             number=response['number'],
             string=response['string']
         )
-        raise AnidbProtocolException(msg)
+        raise exceptions.AnidbProtocolException(msg)
 
-    @inlineCallbacks
-    def log_out(self):
-        if self._logged_in:
-            print("Logging out")
-            yield self.send_with_delay(messages.logout())
-        print("Shutting down")
-        yield self._shutdown()
+    def _login(self):
+        self._send_with_delay(messages.auth_message(
+            self._config['username'],
+            self._config['password']))
+        response = self._receive()
+        if response['number'] not in [200, 201]:
+            self._raise_error(response)
 
-    def handle_response(self, message):
-        raise NotImplementedError()
+    def _logout(self):
+        self._send_with_delay(messages.logout())
 
-class AmvProtocol(AnidbClientProtocol):
-    def __init__(self, username, password, file_info_queue):
-        super().__init__(username, password)
-        self.no_such_file_infos = []
-        self._last_sent_file_info = None
-        self._file_info_queue = file_info_queue
-
-    def verify_file_registered_response(self, response):
-        if not self._last_sent_file_info:
-            self.raise_error(response)
-        elif response['number'] == 320:
-            self.no_such_file_infos.append(self._last_sent_file_info)
+    def register_file(self, file_info):
+        print("Registering file {file}".format(file=file_info['path']))
+        self._send_with_delay(messages.mylistadd(
+            size=file_info['size'],
+            ed2k=file_info['ed2k']
+        ))
+        datagram, _ = self._socket.recvfrom(4096)
+        response = messages.parse_message(datagram)
+        if response['number'] == 320:
+            print("No such file")
+            return False
         elif response['number'] == 310:
-            print('File {} already registered'.format(self._last_sent_file_info['fname']))
+            print('File {} already registered'.format(file_info['fname']))
+            return True
         elif response['number'] == 210:
             print('File {} registered successfully')
+            return True
         else:
-            self.raise_error(response)
+            self._raise_error(response)
 
-    @inlineCallbacks
-    def handle_response(self, response):
-        self.verify_file_registered_response(response)
+    def register_files(self):
+        no_such_file_infos = []
+        while True:
+            file_info = self._file_info_queue.get()
+            if file_info is None or self._shutdown_event.is_set():
+                return
+            if not self.register_file(file_info):
+                no_such_file_infos.append(file_info)
 
-        file_info = yield self._file_info_queue.get()
-        if file_info is None:
-            yield self._log_out()
-        else:
-            print("Registering file {file}".format(file=file_info['path']))
-            yield self.send_with_delay(messages.mylistadd(
-                size=file_info['size'],
-                ed2k=file_info['ed2k']
-            ))
-            self._last_sent_file_info = file_info
+        self._logout()
+        return no_such_file_infos
 
-def process_files(file_info_queue, files):
-    for fname in files:
-        print("Processing file {}".format(fname))
-        reactor.callFromThread(file_info_queue.put, {
-            'path': fname,
-            'size': os.path.getsize(fname),
-            'ed2k': ed2k_of_path(fname)
-        })
+def process_files(shutdown_event, file_info_queue, files):
+    try:
+        for fname in files:
+            if shutdown_event.is_set():
+                break
 
-        reactor.callFromThread(file_info_queue.put, None)
+            print("Processing file {}".format(fname))
+            file_info_queue.put({
+                'path': fname,
+                'size': os.path.getsize(fname),
+                'ed2k': ed2k_of_path(fname)
+            })
+            print("Done processing file")
 
-def register_files(username, password, files):
-    file_info_queue = DeferredQueue()
-    client = AmvProtocol(username, password, file_info_queue)
-    reactor.callInThread(process_files, file_info_queue, files)
-    reactor.listenUDP(0, client)
-    reactor.run()
+        file_info_queue.put(None)
+    except: #pylint: disable=bare-except
+        print("Hej")
 
-    return client.no_such_file_infos
+def register_files(config, files):
+    shutdown_event = Event()
+    file_info_queue = Queue()
+
+    def signal_handler(*_):
+        shutdown_event.set()
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    Thread(target=process_files, args=(shutdown_event, file_info_queue, files)).start()
+    with UdpClient(config, shutdown_event, file_info_queue) as client:
+        return client.register_files()
