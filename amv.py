@@ -30,19 +30,20 @@ def get_files_to_register(files):
 
     return files_to_register
 
-def get_file_infos(files):
-    return [{
-        'path': fname,
-        'size': os.path.getsize(fname),
-        'ed2k': ed2k_of_path(fname)
-    } for fname in files]
+def get_file_infos_iterator(files):
+    for fname in files:
+        yield {
+            'path': fname,
+            'size': os.path.getsize(fname),
+            'ed2k': ed2k_of_path(fname)
+        }
 
 def main():
     args = parse_args()
     files_to_register = get_files_to_register(args.files)
-    file_infos = get_file_infos(files_to_register)
+    file_infos_iterator = get_file_infos_iterator(files_to_register)
     username, password = get_username_and_password()
-    no_such_files = register_files(username, password, file_infos)
+    no_such_files = register_files(username, password, file_infos_iterator)
     print(no_such_files)
 
 if __name__ == '__main__':
