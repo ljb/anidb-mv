@@ -14,7 +14,8 @@ import exceptions
 CLIENT_NAME = 'amv'
 EXTENDED_PERIOD_OF_TIME = 60
 #ANIDB_HOST = 'api.anidb.net'
-ANIDB_HOST = 'localhost'
+ANIDB_HOST = '50.30.46.102'
+#ANIDB_HOST = 'localhost'
 ANIDB_PORT = 9000
 TIMEOUT = 30
 
@@ -26,11 +27,12 @@ class UdpClient(object):
         self._socket = None
         self._nr_free_packets = 5
         self._start_time = None
+        self._session_id = None
 
     def __enter__(self):
         self._start_time = time.time()
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._socket.bind((ANIDB_HOST, self._config['local_port']))
+        self._socket.bind(('0.0.0.0', self._config['local_port']))
         self._socket.settimeout(TIMEOUT)
         self._login()
         return self
@@ -59,6 +61,7 @@ class UdpClient(object):
 
     def _receive(self):
         datagram, _ = self._socket.recvfrom(4096)
+        print(datagram)
         return messages.parse_message(datagram)
 
     @staticmethod
@@ -74,8 +77,10 @@ class UdpClient(object):
             self._config['username'],
             self._config['password']))
         response = self._receive()
+        print('Received response', response)
         if response['number'] not in [200, 201]:
             self._raise_error(response)
+        self._session_id = response['session']
 
     def _logout(self):
         self._send_with_delay(messages.logout())
@@ -84,7 +89,8 @@ class UdpClient(object):
         print("Registering file {file}".format(file=file_info['path']))
         self._send_with_delay(messages.mylistadd(
             size=file_info['size'],
-            ed2k=file_info['ed2k']
+            ed2k=file_info['ed2k'],
+            session=self._session_id
         ))
         datagram, _ = self._socket.recvfrom(4096)
         response = messages.parse_message(datagram)
@@ -95,7 +101,7 @@ class UdpClient(object):
             print('File {} already registered'.format(file_info['fname']))
             return True
         elif response['number'] == 210:
-            print('File {} registered successfully')
+            print('File {} registered successfully'.format(file_info['path']))
             return True
         else:
             self._raise_error(response)

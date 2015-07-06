@@ -13,6 +13,7 @@ def parse_args():
                         help='If the files have not been watched')
     parser.add_argument('files', nargs='+', help='The files to move and register')
     parser.add_argument('dir', help='The directory to move the files to')
+
     return parser.parse_args()
 
 def read_config():
