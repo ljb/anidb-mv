@@ -13,9 +13,7 @@ import exceptions
 
 CLIENT_NAME = 'amv'
 EXTENDED_PERIOD_OF_TIME = 60
-#ANIDB_HOST = 'api.anidb.net'
-ANIDB_HOST = '50.30.46.102'
-#ANIDB_HOST = 'localhost'
+ANIDB_HOST = 'api.anidb.net'
 ANIDB_PORT = 9000
 TIMEOUT = 30
 
@@ -124,7 +122,7 @@ def process_files(shutdown_event, file_info_queue, files):
             if shutdown_event.is_set():
                 break
 
-            print("Processing file {}".format(fname))
+            print("Processing file {}".format(os.path.basename(fname)))
             file_info_queue.put({
                 'path': fname,
                 'size': os.path.getsize(fname),

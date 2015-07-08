@@ -3,6 +3,7 @@
 import argparse
 # import json
 import os
+import shutil
 import sys
 from configparser import ConfigParser
 from protocol import register_files
@@ -19,12 +20,12 @@ def parse_args():
 def read_config():
     config_path = os.path.expanduser('~/.amvrc')
     if not os.path.exists(config_path):
-        print("No config file exists at {}."
-              "Create one with the following format:"
-              "[anidb]"
-              "local_port=9000"
-              "username=myusername"
-              "password=mypassword")
+        print("No config file exists at {}.\n"
+              "Create one with the following format:\n"
+              "[anidb]\n"
+              "local_port=9000\n"
+              "username=myusername\n"
+              "password=mypassword".format(config_path))
         sys.exit(1)
 
     parser = ConfigParser()
@@ -51,7 +52,13 @@ def main():
     files = get_files_to_register(args.files)
     config = read_config()
     no_such_files = register_files(config, files)
-    print(no_such_files)
+
+    if no_such_files:
+        print(no_such_files)
+
+    for fname in files:
+        print("Moving {} to {}".format(os.path.basename(fname), args.dir))
+        shutil.move(fname, args.dir)
 
 if __name__ == '__main__':
     main()
