@@ -33,11 +33,11 @@ def get_unregistered_files(cursor):
         'path': result[5],
     } for result in results]
 
-def add_unregistered_files(cursor, time, watched, internal, file_infos):
+def add_unregistered_files(cursor, file_infos):
     cursor.executemany('insert into episodes values (?, ?, ?, ?, ? ,?)', [(
-        time,
-        int(watched),
-        int(internal),
+        file_info['view_date'],
+        file_info['watched'],
+        file_info['internal'],
         file_info['ed2k'],
         file_info['size'],
         file_info['path']) for file_info in file_infos])

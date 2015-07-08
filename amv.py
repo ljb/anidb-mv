@@ -23,6 +23,12 @@ def parse_args():
 
     return parser.parse_args()
 
+def setup_signal_handling(shutdown_event):
+    def signal_handler(*_):
+        shutdown_event.set()
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
 def read_config():
     config_path = os.path.expanduser('~/.amvrc')
     if not os.path.exists(config_path):
@@ -53,7 +59,8 @@ def get_files_to_register(files):
 
     return files_to_register
 
-def process_files(shutdown_event, file_info_queue, files):
+#pylint: disable=too-many-arguments
+def process_files(watched_time, watched, internal, shutdown_event, file_info_queue, files):
     try:
         for fname in files:
             if shutdown_event.is_set():
@@ -61,6 +68,9 @@ def process_files(shutdown_event, file_info_queue, files):
 
             print("Processing file {}".format(os.path.basename(fname)))
             file_info_queue.put({
+                'watched_time': watched_time,
+                'internal': internal,
+                'watched': watched,
                 'path': fname,
                 'size': os.path.getsize(fname),
                 'ed2k': ed2k_of_path(fname)
@@ -68,43 +78,43 @@ def process_files(shutdown_event, file_info_queue, files):
             print("Done processing file")
 
         file_info_queue.put(None)
-    except: #pylint: disable=bare-except
-        print("Hej")
-
-def setup_signal_handling(shutdown_event):
-    def signal_handler(*_):
+    except Exception as exception:  # pylint: disable=broad-except
+        print("Received exception {} while processing files".format(exception))
         shutdown_event.set()
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+
+def add_unregistered_files_to_db(no_such_files):
+    if no_such_files:
+        with database.open_database() as cursor:
+            print("Adding files that failed to get registered to database")
+            database.add_unregistered_files(
+                cursor,
+                no_such_files
+            )
+
+def move_files(files, directory):
+    for fname in files:
+        print("Moving {} to {}".format(os.path.basename(fname), directory))
+        shutil.move(fname, directory)
 
 def main():
     shutdown_event = Event()
-    file_info_queue = Queue()
     setup_signal_handling(shutdown_event)
 
     args = parse_args()
     config = read_config()
 
     files = get_files_to_register(args.files)
-    Thread(target=process_files, args=(shutdown_event, file_info_queue, files)).start()
+    file_info_queue = Queue()
+    Thread(
+        target=process_files,
+        args=(time.time(), args.watched, args.internal, shutdown_event, file_info_queue, files)
+    ).start()
 
     with UdpClient(config, shutdown_event, file_info_queue) as client:
         no_such_files = client.register_files()
 
-    if no_such_files:
-        with database.open_database() as cursor:
-            database.add_unregistered_files(
-                cursor,
-                time.time(),
-                args.watched,
-                args.internal,
-                no_such_files
-            )
-            print("Adding files that failed to get registered to database")
-
-    for fname in files:
-        print("Moving {} to {}".format(os.path.basename(fname), args.dir))
-        shutil.move(fname, args.dir)
+    add_unregistered_files_to_db(no_such_files)
+    move_files(files, args.dir)
 
 if __name__ == '__main__':
     main()
