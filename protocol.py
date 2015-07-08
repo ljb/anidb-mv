@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 
-import os
-import signal
 import socket
 import time
-from threading import Event, Thread
-from queue import Queue
 
-from hashing import ed2k_of_path
 import messages
 import exceptions
 
@@ -115,34 +110,3 @@ class UdpClient(object):
 
         self._logout()
         return no_such_file_infos
-
-def process_files(shutdown_event, file_info_queue, files):
-    try:
-        for fname in files:
-            if shutdown_event.is_set():
-                break
-
-            print("Processing file {}".format(os.path.basename(fname)))
-            file_info_queue.put({
-                'path': fname,
-                'size': os.path.getsize(fname),
-                'ed2k': ed2k_of_path(fname)
-            })
-            print("Done processing file")
-
-        file_info_queue.put(None)
-    except: #pylint: disable=bare-except
-        print("Hej")
-
-def register_files(config, files):
-    shutdown_event = Event()
-    file_info_queue = Queue()
-
-    def signal_handler(*_):
-        shutdown_event.set()
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    Thread(target=process_files, args=(shutdown_event, file_info_queue, files)).start()
-    with UdpClient(config, shutdown_event, file_info_queue) as client:
-        return client.register_files()

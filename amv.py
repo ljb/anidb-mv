@@ -3,12 +3,16 @@
 import argparse
 import os
 import shutil
+import signal
 import sys
 import time
 from configparser import ConfigParser
+from threading import Event, Thread
+from queue import Queue
 
 import database
-from protocol import register_files
+from hashing import ed2k_of_path
+from protocol import UdpClient
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Move and register files on anidb')
@@ -49,11 +53,43 @@ def get_files_to_register(files):
 
     return files_to_register
 
+def process_files(shutdown_event, file_info_queue, files):
+    try:
+        for fname in files:
+            if shutdown_event.is_set():
+                break
+
+            print("Processing file {}".format(os.path.basename(fname)))
+            file_info_queue.put({
+                'path': fname,
+                'size': os.path.getsize(fname),
+                'ed2k': ed2k_of_path(fname)
+            })
+            print("Done processing file")
+
+        file_info_queue.put(None)
+    except: #pylint: disable=bare-except
+        print("Hej")
+
+def setup_signal_handling(shutdown_event):
+    def signal_handler(*_):
+        shutdown_event.set()
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
 def main():
+    shutdown_event = Event()
+    file_info_queue = Queue()
+    setup_signal_handling(shutdown_event)
+
     args = parse_args()
-    files = get_files_to_register(args.files)
     config = read_config()
-    no_such_files = register_files(config, files)
+
+    files = get_files_to_register(args.files)
+    Thread(target=process_files, args=(shutdown_event, file_info_queue, files)).start()
+
+    with UdpClient(config, shutdown_event, file_info_queue) as client:
+        no_such_files = client.register_files()
 
     if no_such_files:
         with database.open_database() as cursor:
