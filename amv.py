@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
-# import json
 import os
 import shutil
 import sys
+import time
 from configparser import ConfigParser
+
+import database
 from protocol import register_files
 
 def parse_args():
@@ -54,7 +56,15 @@ def main():
     no_such_files = register_files(config, files)
 
     if no_such_files:
-        print(no_such_files)
+        with database.open_database() as cursor:
+            database.add_unregistered_files(
+                cursor,
+                time.time(),
+                args.watched,
+                args.internal,
+                no_such_files
+            )
+            print("Adding files that failed to get registered to database")
 
     for fname in files:
         print("Moving {} to {}".format(os.path.basename(fname), args.dir))
