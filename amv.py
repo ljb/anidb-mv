@@ -20,6 +20,8 @@ def parse_args():
                         help='If the files have not been watched')
     parser.add_argument('--external', action='store_true',
                         help='If the files are externally stored')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Print protocol information')
     parser.add_argument('files', nargs='+', help='The files to move and register')
     parser.add_argument('dir', help='The directory to move the files to')
 
@@ -77,7 +79,6 @@ def process_files(watched_time, watched, internal, shutdown_event, file_info_que
                 'size': os.path.getsize(fname),
                 'ed2k': ed2k_of_path(fname)
             })
-            print("Done processing file")
 
         file_info_queue.put(None)
     except Exception as exception:  # pylint: disable=broad-except
@@ -112,7 +113,8 @@ def main():
         args=(time.time(), args.watched, not args.external, shutdown_event, file_info_queue, files)
     ).start()
 
-    with UdpClient(config, shutdown_event, file_info_queue) as client:
+    #pylint: disable=too-many-function-args
+    with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
         no_such_files = client.register_files()
 
     add_unregistered_files_to_db(no_such_files)

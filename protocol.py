@@ -13,7 +13,9 @@ ANIDB_PORT = 9000
 TIMEOUT = 30
 
 class UdpClient(object):
-    def __init__(self, config, shutdown_event, file_info_queue):
+    #pylint: disable=too-many-instance-attributes
+    def __init__(self, verbose, config, shutdown_event, file_info_queue):
+        self._verbose = verbose
         self._config = config
         self._shutdown_event = shutdown_event
         self._file_info_queue = file_info_queue
@@ -21,6 +23,10 @@ class UdpClient(object):
         self._nr_free_packets = 5
         self._start_time = None
         self._session_id = None
+
+    def _print(self, *args):
+        if self._verbose:
+            print(*args)
 
     def __enter__(self):
         self._start_time = time.time()
@@ -47,14 +53,13 @@ class UdpClient(object):
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
 
     def _send_with_delay(self, datagram):
-        print("Sending {}".format(datagram))
+        self._print("Sending {}".format(datagram))
         delay = self._get_delay_and_decrease_counter()
         time.sleep(delay)
         self._socket.sendto(datagram, (ANIDB_HOST, ANIDB_PORT))
 
     def _receive(self):
         datagram, _ = self._socket.recvfrom(4096)
-        print(datagram)
         return messages.parse_message(datagram)
 
     @staticmethod
@@ -70,7 +75,7 @@ class UdpClient(object):
             self._config['username'],
             self._config['password']))
         response = self._receive()
-        print('Received response', response)
+        self._print('Received response', response)
         if response['number'] not in [200, 201]:
             self._raise_error(response)
         self._session_id = response['session']
@@ -79,7 +84,7 @@ class UdpClient(object):
         self._send_with_delay(messages.logout())
 
     def register_file(self, file_info):
-        print("Registering file {file}".format(file=file_info['path']))
+        self._print("Registering file {file}".format(file=file_info['path']))
         self._send_with_delay(messages.mylistadd(
             size=file_info['size'],
             ed2k=file_info['ed2k'],
