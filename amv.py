@@ -16,8 +16,10 @@ from protocol import UdpClient
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Move and register files on anidb')
-    parser.add_argument('-W', '--not-watched', action='store_false', default=True,
+    parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
                         help='If the files have not been watched')
+    parser.add_argument('--external', action='store_true',
+                        help='If the files are externally stored')
     parser.add_argument('files', nargs='+', help='The files to move and register')
     parser.add_argument('dir', help='The directory to move the files to')
 
@@ -107,7 +109,7 @@ def main():
     file_info_queue = Queue()
     Thread(
         target=process_files,
-        args=(time.time(), args.watched, args.internal, shutdown_event, file_info_queue, files)
+        args=(time.time(), args.watched, not args.external, shutdown_event, file_info_queue, files)
     ).start()
 
     with UdpClient(config, shutdown_event, file_info_queue) as client:
