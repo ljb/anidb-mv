@@ -22,10 +22,22 @@ def parse_args():
                         help='If the files are externally stored')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Print protocol information')
-    parser.add_argument('files', nargs='+', help='The files to move and register')
+    parser.add_argument('-n', '--no-move', action='store_false', default=True, dest='move',
+                        help='Do not move the files, only register them')
+    parser.add_argument('files', nargs='*', help='The files to move and register')
     parser.add_argument('directory', help='The directory to move the files to')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.move:
+        if not args.directory:
+            print("A directory argument is required when not using the --no-move flag")
+            sys.exit(1)
+        elif os.path.isdir(args.directory):
+            print("{} is not a directory".format(args.directory))
+            sys.exit(1)
+
+    return args
 
 def setup_signal_handling(shutdown_event):
     def signal_handler(*_):
