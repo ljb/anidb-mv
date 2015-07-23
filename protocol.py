@@ -109,7 +109,7 @@ class UdpClient(object):
         while True:
             file_info = self._file_info_queue.get()
             if file_info is None or self._shutdown_event.is_set():
-                return
+                break
             if not self.register_file(file_info):
                 no_such_file_infos.append(file_info)
 

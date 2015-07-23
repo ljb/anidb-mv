@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Print protocol information')
     parser.add_argument('files', nargs='+', help='The files to move and register')
-    parser.add_argument('dir', help='The directory to move the files to')
+    parser.add_argument('directory', help='The directory to move the files to')
 
     return parser.parse_args()
 
@@ -72,7 +72,8 @@ def process_files(watched_time, watched, internal, shutdown_event, file_info_que
 
             print("Processing file {}".format(os.path.basename(fname)))
             file_info_queue.put({
-                'watched_time': watched_time,
+                'id': None,
+                'view_date': watched_time,
                 'internal': internal,
                 'watched': watched,
                 'path': fname,
@@ -85,14 +86,30 @@ def process_files(watched_time, watched, internal, shutdown_event, file_info_que
         print("Received exception {} while processing files".format(exception))
         shutdown_event.set()
 
-def add_unregistered_files_to_db(no_such_files):
+def add_unregistered_files(file_info_queue, unregistered_files):
+    for file_info in unregistered_files:
+        file_info_queue.add(file_info)
+
+def add_unregistered_files_to_db(cursor, no_such_files):
     if no_such_files:
-        with database.open_database() as cursor:
-            print("Adding files that failed to get registered to database")
-            database.add_unregistered_files(
-                cursor,
-                no_such_files
-            )
+        print("Adding files that failed to get registered to database")
+        database.add_unregistered_files(
+            cursor,
+            no_such_files
+        )
+
+def remove_files_registered_from_db(cursor, unregistered_files, no_such_files):
+    files_that_got_registered = list(
+        set(unregistered_files) -
+        set(no_such_file for no_such_file in no_such_files if no_such_file['id'])
+    )
+
+    if files_that_got_registered:
+        print("Removing files that got registered from the database")
+        database.remove_files(
+            cursor,
+            [file_info['id'] for file_info in files_that_got_registered]
+        )
 
 def move_files(files, directory):
     for fname in files:
@@ -113,12 +130,16 @@ def main():
         args=(time.time(), args.watched, not args.external, shutdown_event, file_info_queue, files)
     ).start()
 
-    #pylint: disable=too-many-function-args
-    with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
-        no_such_files = client.register_files()
+    with database.open_database() as cursor:
+        unregistered_files = database.get_unregistered_files(cursor)
+        add_unregistered_files(file_info_queue, unregistered_files)
+        #pylint: disable=too-many-function-args
+        with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
+            no_such_files = client.register_files()
 
-    add_unregistered_files_to_db(no_such_files)
-    move_files(files, args.dir)
+        add_unregistered_files_to_db(cursor, no_such_files)
+        remove_files_registered_from_db(cursor, unregistered_files, no_such_files)
+    move_files(files, args.directory)
 
 if __name__ == '__main__':
     main()
