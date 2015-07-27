@@ -33,7 +33,7 @@ def parse_args():
         if not args.directory:
             print("A directory argument is required when not using the --no-move flag")
             sys.exit(1)
-        elif os.path.isdir(args.directory):
+        elif not os.path.isdir(args.directory):
             print("{} is not a directory".format(args.directory))
             sys.exit(1)
 
