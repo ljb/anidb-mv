@@ -93,10 +93,10 @@ class UdpClient(object):
         datagram, _ = self._socket.recvfrom(4096)
         response = messages.parse_message(datagram)
         if response['number'] == 320:
-            print("No such file")
+            print("No such file {}".format(file_info['path']))
             return False
         elif response['number'] == 310:
-            print('File {} already registered'.format(file_info['fname']))
+            print('File {} already registered'.format(file_info['path']))
             return True
         elif response['number'] == 210:
             print('File {} registered successfully'.format(file_info['path']))

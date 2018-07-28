@@ -100,7 +100,7 @@ def process_files(watched_time, watched, internal, shutdown_event, file_info_que
 
 def add_unregistered_files(file_info_queue, unregistered_files):
     for file_info in unregistered_files:
-        file_info_queue.add(file_info)
+        file_info_queue.put(file_info)
 
 def add_unregistered_files_to_db(cursor, no_such_files):
     if no_such_files:
@@ -111,16 +111,16 @@ def add_unregistered_files_to_db(cursor, no_such_files):
         )
 
 def remove_files_registered_from_db(cursor, unregistered_files, no_such_files):
-    files_that_got_registered = list(
-        set(unregistered_files) -
-        set(no_such_file for no_such_file in no_such_files if no_such_file['id'])
+    file_ids_that_got_registered = list(
+        set(unregistered_file['id'] for unregistered_file in unregistered_files) -
+        set(no_such_file['id'] for no_such_file in no_such_files if no_such_file['id'])
     )
 
-    if files_that_got_registered:
+    if file_ids_that_got_registered:
         print("Removing files that got registered from the database")
         database.remove_files(
             cursor,
-            [file_info['id'] for file_info in files_that_got_registered]
+            file_ids_that_got_registered
         )
 
 def move_files(files, directory):
