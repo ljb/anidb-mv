@@ -32,7 +32,7 @@ def main():
             no_such_files = client.register_files()
 
         _add_unregistered_files_to_db(cursor, no_such_files)
-        _remove_files_registered_from_db(cursor, unregistered_files, no_such_files)
+        _remove_registered_files_from_db(cursor, unregistered_files, no_such_files)
     _move_files(files, args.directory)
 
 
@@ -58,8 +58,9 @@ def _parse_args():
                         help='Print protocol information')
     parser.add_argument('-n', '--no-move', action='store_false', default=True, dest='move',
                         help='Do not move the files, only register them')
-    parser.add_argument('-i', '--no-old-report',
-                        help='Do not try to report old files')
+    parser.add_argument('-N', '--no-old-report',
+                        help='Do not try to report old files that previously failed to get '
+                             'registered')
     parser.add_argument('files', nargs='*', help='The files to move and register')
     parser.add_argument('directory', help='The directory to move the files to')
 
@@ -98,12 +99,14 @@ def _read_config():
 
 def _get_files_to_register(files):
     files_to_register = set()
-    for arg_file in files:
-        if os.path.isdir(arg_file):
-            for root, _, files in os.walk(arg_file):
-                files_to_register.update([os.path.join(root, file_name) for file_name in files])
+    for file_ in files:
+        if os.path.isdir(file_):
+            for root, _, files_in_dir in os.walk(file_):
+                files_to_register.update(
+                    [os.path.join(root, file_name) for file_name in files_in_dir]
+                )
         else:
-            files_to_register.add(arg_file)
+            files_to_register.add(file_)
 
     return files_to_register
 
@@ -153,7 +156,8 @@ def _add_unregistered_files_to_db(cursor, no_such_files):
         )
 
 
-def _remove_files_registered_from_db(cursor, unregistered_files, no_such_files):
+# pylint: disable=invalid-name
+def _remove_registered_files_from_db(cursor, unregistered_files, no_such_files):
     file_ids_that_got_registered = list(
         set(unregistered_file['id'] for unregistered_file in unregistered_files) -
         set(no_such_file['id'] for no_such_file in no_such_files if no_such_file['id'])

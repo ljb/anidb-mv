@@ -13,7 +13,7 @@ ANIDB_PORT = 9000
 TIMEOUT = 30
 
 
-class UdpClient(object):
+class UdpClient:
     # pylint: disable=too-many-instance-attributes
     def __init__(self, verbose, config, shutdown_event, file_info_queue):
         self._verbose = verbose
@@ -57,10 +57,10 @@ class UdpClient(object):
         if self._nr_free_packets > 0:
             self._nr_free_packets -= 1
             return 0
-        elif self._extended_period_of_time():
+        if self._extended_period_of_time():
             return 4
-        else:
-            return 2
+
+        return 2
 
     def _extended_period_of_time(self):
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
@@ -77,11 +77,11 @@ class UdpClient(object):
 
     @staticmethod
     def _raise_error(response):
-        msg = 'Received unknown response "{number} {string}" in response to login'.format(
-            number=response['number'],
-            string=response['string']
-        )
-        raise exceptions.AnidbProtocolException(msg)
+        raise exceptions.AnidbProtocolException(
+            'Received unknown response "{number} {string}" in response to login'.format(
+                number=response['number'],
+                string=response['string']
+            ))
 
     def _login(self):
         self._send_with_delay(messages.auth_message(
@@ -96,6 +96,7 @@ class UdpClient(object):
     def _logout(self):
         self._send_with_delay(messages.logout())
 
+    # pylint: disable=inconsistent-return-statements
     def _register_file(self, file_info):
         self._print("Registering file {file}".format(file=file_info['path']))
         self._send_with_delay(messages.mylistadd(
@@ -108,11 +109,11 @@ class UdpClient(object):
         if response['number'] == 320:
             print("No such file {}".format(file_info['path']))
             return False
-        elif response['number'] == 310:
+        if response['number'] == 310:
             print('File {} already registered'.format(file_info['path']))
             return True
-        elif response['number'] == 210:
+        if response['number'] == 210:
             print('File {} registered successfully'.format(file_info['path']))
             return True
-        else:
-            self._raise_error(response)
+
+        self._raise_error(response)

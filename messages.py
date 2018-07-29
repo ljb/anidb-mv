@@ -48,5 +48,5 @@ def parse_message(datagram):
     if number in [200, 201]:
         second_parts = parts[1].split(' ', maxsplit=1)
         return {'number': number, 'session': second_parts[0], 'string': second_parts[1].rstrip()}
-    else:
-        return {'number': number, 'string': parts[1].rstrip()}
+
+    return {'number': number, 'string': parts[1].rstrip()}
