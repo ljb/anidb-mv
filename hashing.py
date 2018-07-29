@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import os
 import hashlib
+import os
+
 
 def _md4_of_block(block):
     return hashlib.new('md4', block)
+
 
 def ed2k_of_path(path):
     blocksize = 9500 * 1024

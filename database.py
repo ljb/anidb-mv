@@ -2,6 +2,7 @@ import os
 import sqlite3
 from contextlib import contextmanager
 
+
 @contextmanager
 def open_database():
     connection = None
@@ -22,12 +23,15 @@ def open_database():
             connection.commit()
             connection.close()
 
+
 def clear(cursor):
     cursor.execute('delete from unregistered_files')
     cursor.execute('vacuum')
 
+
 def remove_files(cursor, ids):
     cursor.executemany('delete from unregistered_files where rowid=?', ((rowid,) for rowid in ids))
+
 
 def get_unregistered_files(cursor):
     results = cursor.execute('select rowid, * from unregistered_files')
@@ -41,6 +45,7 @@ def get_unregistered_files(cursor):
         'path': result[6],
         'registered': 0,
     } for result in results]
+
 
 def add_unregistered_files(cursor, file_infos):
     cursor.executemany('insert into unregistered_files values (?, ?, ?, ?, ? ,?)', ((

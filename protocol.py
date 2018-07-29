@@ -3,8 +3,8 @@
 import socket
 import time
 
-import messages
 import exceptions
+import messages
 
 CLIENT_NAME = 'amv'
 EXTENDED_PERIOD_OF_TIME = 60
@@ -12,8 +12,9 @@ ANIDB_HOST = 'api.anidb.net'
 ANIDB_PORT = 9000
 TIMEOUT = 30
 
+
 class UdpClient(object):
-    #pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, verbose, config, shutdown_event, file_info_queue):
         self._verbose = verbose
         self._config = config

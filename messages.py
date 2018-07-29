@@ -1,5 +1,6 @@
 from exceptions import AnidbProtocolException
 
+
 def _create_message(name, *parameters):
     return '{name} {parameters}'.format(
         name=name,
@@ -8,6 +9,7 @@ def _create_message(name, *parameters):
             value=value
         ) for key, value in parameters)
     ).encode('ascii')
+
 
 def auth_message(username, password):
     return _create_message(
@@ -19,6 +21,7 @@ def auth_message(username, password):
         ('clientver', 1),
     )
 
+
 def mylistadd(size, ed2k, session):
     return _create_message(
         'MYLISTADD',
@@ -29,8 +32,10 @@ def mylistadd(size, ed2k, session):
         ('s', session)
     )
 
+
 def logout():
     return b'LOGOUT'
+
 
 def parse_message(datagram):
     parts = datagram.decode('ascii').split(' ', maxsplit=1)
