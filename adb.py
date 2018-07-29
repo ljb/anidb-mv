@@ -6,6 +6,16 @@ from datetime import datetime
 import database
 
 
+def main():
+    args = parse_args()
+    if args.action == 'list':
+        handle_list()
+    elif args.action == 'remove':
+        handle_remove(args)
+    elif args.action == 'clear':
+        handle_clear()
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Handle unregister files on anidb')
     subparsers = parser.add_subparsers(dest='action')
@@ -17,7 +27,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def sizeof_fmt(num, suffix='B'):
+def sizeof_format(num, suffix='B'):
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return "%3.1f%s%s" % (num, unit, suffix)
@@ -51,7 +61,7 @@ def print_list_line(file_info):
     print('{id:<10}{size:<10}{ed2k:34}{internal:<10}{watched:<9}{view_date:21}{path}'.format(
         id=file_info['id'],
         path=file_info['path'],
-        size=sizeof_fmt(file_info['size']),
+        size=sizeof_format(file_info['size']),
         ed2k=file_info['ed2k'],
         internal=file_info['internal'],
         watched=file_info['watched'],
@@ -69,16 +79,6 @@ def handle_clear():
 def handle_remove(args):
     with database.open_database() as cursor:
         database.remove_files(cursor, args.ids)
-
-
-def main():
-    args = parse_args()
-    if args.action == 'list':
-        handle_list()
-    elif args.action == 'remove':
-        handle_remove(args)
-    elif args.action == 'clear':
-        handle_clear()
 
 
 if __name__ == '__main__':

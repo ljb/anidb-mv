@@ -15,6 +15,32 @@ from hashing import ed2k_of_path
 from protocol import UdpClient
 
 
+def main():
+    shutdown_event = Event()
+    setup_signal_handling(shutdown_event)
+
+    args = parse_args()
+    config = read_config()
+
+    files = get_files_to_register(args.files)
+    file_info_queue = Queue()
+    Thread(
+        target=process_files,
+        args=(time.time(), args.watched, not args.external, shutdown_event, file_info_queue, files)
+    ).start()
+
+    with database.open_database() as cursor:
+        unregistered_files = database.get_unregistered_files(cursor)
+        add_unregistered_files(file_info_queue, unregistered_files)
+        # pylint: disable=too-many-function-args
+        with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
+            no_such_files = client.register_files()
+
+        add_unregistered_files_to_db(cursor, no_such_files)
+        remove_files_registered_from_db(cursor, unregistered_files, no_such_files)
+    move_files(files, args.directory)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Move and register files on anidb')
     parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
@@ -137,32 +163,6 @@ def move_files(files, directory):
     for file_name in files:
         print("Moving {} to {}".format(os.path.basename(file_name), directory))
         shutil.move(file_name, directory)
-
-
-def main():
-    shutdown_event = Event()
-    setup_signal_handling(shutdown_event)
-
-    args = parse_args()
-    config = read_config()
-
-    files = get_files_to_register(args.files)
-    file_info_queue = Queue()
-    Thread(
-        target=process_files,
-        args=(time.time(), args.watched, not args.external, shutdown_event, file_info_queue, files)
-    ).start()
-
-    with database.open_database() as cursor:
-        unregistered_files = database.get_unregistered_files(cursor)
-        add_unregistered_files(file_info_queue, unregistered_files)
-        # pylint: disable=too-many-function-args
-        with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
-            no_such_files = client.register_files()
-
-        add_unregistered_files_to_db(cursor, no_such_files)
-        remove_files_registered_from_db(cursor, unregistered_files, no_such_files)
-    move_files(files, args.directory)
 
 
 if __name__ == '__main__':
