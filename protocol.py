@@ -34,7 +34,6 @@ class UdpClient:
             if not self._register_file(file_info):
                 no_such_file_infos.append(file_info)
 
-        self._logout()
         return no_such_file_infos
 
     def _print(self, *args):
