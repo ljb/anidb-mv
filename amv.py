@@ -16,8 +16,7 @@ from protocol import UdpClient
 
 
 def main():
-    shutdown_event = Event()
-    _setup_signal_handling(shutdown_event)
+    shutdown_event = _setup_shutdown_event()
 
     args = _parse_args()
     config = _read_config()
@@ -37,11 +36,16 @@ def main():
     _move_files(files, args.directory)
 
 
-def _start_worker_thread(watched, external, file_info_queue, files, shutdown_event):
-    Thread(
-        target=_process_files,
-        args=(time.time(), watched, not external, shutdown_event, file_info_queue, files)
-    ).start()
+def _setup_shutdown_event():
+    shutdown_event = Event()
+
+    def signal_handler(*_):
+        shutdown_event.set()
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    return shutdown_event
 
 
 def _parse_args():
@@ -70,14 +74,6 @@ def _parse_args():
             sys.exit(1)
 
     return args
-
-
-def _setup_signal_handling(shutdown_event):
-    def signal_handler(*_):
-        shutdown_event.set()
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
 
 
 def _read_config():
@@ -110,6 +106,13 @@ def _get_files_to_register(files):
             files_to_register.add(arg_file)
 
     return files_to_register
+
+
+def _start_worker_thread(watched, external, file_info_queue, files, shutdown_event):
+    Thread(
+        target=_process_files,
+        args=(time.time(), watched, not external, shutdown_event, file_info_queue, files)
+    ).start()
 
 
 # pylint: disable=too-many-arguments

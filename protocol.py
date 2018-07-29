@@ -25,6 +25,18 @@ class UdpClient(object):
         self._start_time = None
         self._session_id = None
 
+    def register_files(self):
+        no_such_file_infos = []
+        while True:
+            file_info = self._file_info_queue.get()
+            if file_info is None or self._shutdown_event.is_set():
+                break
+            if not self._register_file(file_info):
+                no_such_file_infos.append(file_info)
+
+        self._logout()
+        return no_such_file_infos
+
     def _print(self, *args):
         if self._verbose:
             print(*args)
@@ -104,15 +116,3 @@ class UdpClient(object):
             return True
         else:
             self._raise_error(response)
-
-    def register_files(self):
-        no_such_file_infos = []
-        while True:
-            file_info = self._file_info_queue.get()
-            if file_info is None or self._shutdown_event.is_set():
-                break
-            if not self._register_file(file_info):
-                no_such_file_infos.append(file_info)
-
-        self._logout()
-        return no_such_file_infos
