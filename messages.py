@@ -22,7 +22,7 @@ def auth_message(username, password):
     )
 
 
-def mylistadd(size, ed2k, session):
+def mylistadd_message(size, ed2k, session):
     return _create_message(
         'MYLISTADD',
         ('size', size),
@@ -33,7 +33,7 @@ def mylistadd(size, ed2k, session):
     )
 
 
-def logout():
+def logout_message():
     return b'LOGOUT'
 
 

@@ -93,12 +93,12 @@ class UdpClient:
         self._session_id = response['session']
 
     def _logout(self):
-        self._send_with_delay(messages.logout())
+        self._send_with_delay(messages.logout_message())
 
     # pylint: disable=inconsistent-return-statements
     def _register_file(self, file_info):
         self._print("Registering file {file}".format(file=file_info['path']))
-        self._send_with_delay(messages.mylistadd(
+        self._send_with_delay(messages.mylistadd_message(
             size=file_info['size'],
             ed2k=file_info['ed2k'],
             session=self._session_id
