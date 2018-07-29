@@ -17,34 +17,34 @@ from protocol import UdpClient
 
 def main():
     shutdown_event = Event()
-    setup_signal_handling(shutdown_event)
+    _setup_signal_handling(shutdown_event)
 
-    args = parse_args()
-    config = read_config()
+    args = _parse_args()
+    config = _read_config()
 
-    files = get_files_to_register(args.files)
+    files = _get_files_to_register(args.files)
     file_info_queue = Queue()
-    start_worker_thread(args.watched, args.external, file_info_queue, files, shutdown_event)
+    _start_worker_thread(args.watched, args.external, file_info_queue, files, shutdown_event)
 
     with database.open_database() as cursor:
         unregistered_files = database.get_unregistered_files(cursor)
-        add_unregistered_files(file_info_queue, unregistered_files)
+        _add_unregistered_files(file_info_queue, unregistered_files)
         with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
             no_such_files = client.register_files()
 
-        add_unregistered_files_to_db(cursor, no_such_files)
-        remove_files_registered_from_db(cursor, unregistered_files, no_such_files)
-    move_files(files, args.directory)
+        _add_unregistered_files_to_db(cursor, no_such_files)
+        _remove_files_registered_from_db(cursor, unregistered_files, no_such_files)
+    _move_files(files, args.directory)
 
 
-def start_worker_thread(watched, external, file_info_queue, files, shutdown_event):
+def _start_worker_thread(watched, external, file_info_queue, files, shutdown_event):
     Thread(
-        target=process_files,
+        target=_process_files,
         args=(time.time(), watched, not external, shutdown_event, file_info_queue, files)
     ).start()
 
 
-def parse_args():
+def _parse_args():
     parser = argparse.ArgumentParser(description='Move and register files on anidb')
     parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
                         help='If the files have not been watched')
@@ -72,7 +72,7 @@ def parse_args():
     return args
 
 
-def setup_signal_handling(shutdown_event):
+def _setup_signal_handling(shutdown_event):
     def signal_handler(*_):
         shutdown_event.set()
 
@@ -80,7 +80,7 @@ def setup_signal_handling(shutdown_event):
     signal.signal(signal.SIGTERM, signal_handler)
 
 
-def read_config():
+def _read_config():
     config_path = os.path.expanduser('~/.amvrc')
     if not os.path.exists(config_path):
         print("No config file exists at {}.\n"
@@ -100,7 +100,7 @@ def read_config():
     }
 
 
-def get_files_to_register(files):
+def _get_files_to_register(files):
     files_to_register = set()
     for arg_file in files:
         if os.path.isdir(arg_file):
@@ -113,7 +113,7 @@ def get_files_to_register(files):
 
 
 # pylint: disable=too-many-arguments
-def process_files(watched_time, watched, internal, shutdown_event, file_info_queue, files):
+def _process_files(watched_time, watched, internal, shutdown_event, file_info_queue, files):
     try:
         for file_name in files:
             if shutdown_event.is_set():
@@ -136,12 +136,12 @@ def process_files(watched_time, watched, internal, shutdown_event, file_info_que
         shutdown_event.set()
 
 
-def add_unregistered_files(file_info_queue, unregistered_files):
+def _add_unregistered_files(file_info_queue, unregistered_files):
     for file_info in unregistered_files:
         file_info_queue.put(file_info)
 
 
-def add_unregistered_files_to_db(cursor, no_such_files):
+def _add_unregistered_files_to_db(cursor, no_such_files):
     if no_such_files:
         print("Adding files that failed to get registered to database")
         database.add_unregistered_files(
@@ -150,7 +150,7 @@ def add_unregistered_files_to_db(cursor, no_such_files):
         )
 
 
-def remove_files_registered_from_db(cursor, unregistered_files, no_such_files):
+def _remove_files_registered_from_db(cursor, unregistered_files, no_such_files):
     file_ids_that_got_registered = list(
         set(unregistered_file['id'] for unregistered_file in unregistered_files) -
         set(no_such_file['id'] for no_such_file in no_such_files if no_such_file['id'])
@@ -164,7 +164,7 @@ def remove_files_registered_from_db(cursor, unregistered_files, no_such_files):
         )
 
 
-def move_files(files, directory):
+def _move_files(files, directory):
     for file_name in files:
         print("Moving {} to {}".format(os.path.basename(file_name), directory))
         shutil.move(file_name, directory)

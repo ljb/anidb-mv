@@ -84,7 +84,7 @@ class UdpClient(object):
     def _logout(self):
         self._send_with_delay(messages.logout())
 
-    def register_file(self, file_info):
+    def _register_file(self, file_info):
         self._print("Registering file {file}".format(file=file_info['path']))
         self._send_with_delay(messages.mylistadd(
             size=file_info['size'],
@@ -111,7 +111,7 @@ class UdpClient(object):
             file_info = self._file_info_queue.get()
             if file_info is None or self._shutdown_event.is_set():
                 break
-            if not self.register_file(file_info):
+            if not self._register_file(file_info):
                 no_such_file_infos.append(file_info)
 
         self._logout()
