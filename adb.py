@@ -11,7 +11,7 @@ def main():
     if args.action == 'list':
         handle_list()
     elif args.action == 'remove':
-        handle_remove(args)
+        handle_remove(args.ids)
     elif args.action == 'clear':
         handle_clear()
 
@@ -27,12 +27,20 @@ def parse_args():
     return parser.parse_args()
 
 
-def sizeof_format(num, suffix='B'):
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f%s%s" % (num, 'Yi', suffix)
+def format_with_unit(number, unit):
+    return "{:.1f}{}B".format(number, unit)
+
+
+def format_size(number):
+    for unit in ['', 'Ki', 'Mi', 'Gi']:
+        if abs(number) < 1024:
+            return format_with_unit(number, unit)
+        number /= 1024
+    return format_with_unit(number, 'Ti')
+
+
+def format_datetime(view_date):
+    return datetime.fromtimestamp(view_date).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def handle_list():
@@ -61,13 +69,11 @@ def print_list_line(file_info):
     print('{id:<10}{size:<10}{ed2k:34}{internal:<10}{watched:<9}{view_date:21}{path}'.format(
         id=file_info['id'],
         path=file_info['path'],
-        size=sizeof_format(file_info['size']),
+        size=format_size(file_info['size']),
         ed2k=file_info['ed2k'],
         internal=file_info['internal'],
         watched=file_info['watched'],
-        view_date=datetime.fromtimestamp(
-            file_info['view_date']
-        ).strftime('%Y-%m-%d %H:%M:%S')
+        view_date=format_datetime(file_info['view_date'])
     ))
 
 
@@ -76,9 +82,9 @@ def handle_clear():
         database.clear(cursor)
 
 
-def handle_remove(args):
+def handle_remove(ids):
     with database.open_database() as cursor:
-        database.remove_files(cursor, args.ids)
+        database.remove_files(cursor, ids)
 
 
 if __name__ == '__main__':

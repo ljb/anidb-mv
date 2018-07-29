@@ -54,6 +54,8 @@ def parse_args():
                         help='Print protocol information')
     parser.add_argument('-n', '--no-move', action='store_false', default=True, dest='move',
                         help='Do not move the files, only register them')
+    parser.add_argument('-i', '--no-old-report',
+                        help='Do not try to report old files')
     parser.add_argument('files', nargs='*', help='The files to move and register')
     parser.add_argument('directory', help='The directory to move the files to')
 
