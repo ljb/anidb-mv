@@ -15,7 +15,7 @@ TIMEOUT = 30
 
 class UdpClient:
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, verbose, config, shutdown_event, file_info_queue):
+    def __init__(self, shutdown_event, verbose, config, file_info_queue):
         self._verbose = verbose
         self._config = config
         self._shutdown_event = shutdown_event
@@ -25,7 +25,7 @@ class UdpClient:
         self._start_time = None
         self._session_id = None
 
-    def register_files(self):
+    def register_file_infos(self):
         no_such_file_infos = []
         while True:
             file_info = self._file_info_queue.get()

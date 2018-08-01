@@ -4,10 +4,12 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def open_database():
+def open_database(database_path=None):
+    database_path = database_path or os.path.expanduser('~/.amv.sqlite3')
     connection = None
     try:
-        connection = sqlite3.connect(os.path.expanduser('~/.amv.sqlite3'))
+        connection = sqlite3.connect(database_path)
+        connection.isolation_level = None  # Workaround for https://github.com/ghaering/pysqlite/issues/109
         cursor = connection.cursor()
         cursor.execute('create table if not exists unregistered_files ('
                        'view_date datetime,'
@@ -43,7 +45,6 @@ def get_unregistered_files(cursor):
         'ed2k': result[4],
         'size': result[5],
         'path': result[6],
-        'registered': 0,
     } for result in results]
 
 

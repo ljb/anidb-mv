@@ -6,6 +6,7 @@ import shutil
 import signal
 import sys
 import time
+from collections import OrderedDict
 from configparser import ConfigParser
 from queue import Queue
 from threading import Event, Thread
@@ -21,19 +22,21 @@ def main():
     args = _parse_args()
     config = _read_config()
 
-    files = _get_files_to_register(args.files)
+    files_and_dirs_without_duplicates = _remove_duplicates(args.files)
+    files = _get_paths_to_register(files_and_dirs_without_duplicates)
     file_info_queue = Queue()
-    _start_worker_thread(args.watched, args.external, file_info_queue, files, shutdown_event)
 
     with database.open_database() as cursor:
-        unregistered_files = database.get_unregistered_files(cursor)
-        _add_unregistered_files(file_info_queue, unregistered_files)
-        with UdpClient(args.verbose, config, shutdown_event, file_info_queue) as client:
-            no_such_files = client.register_files()
+        file_infos_from_database = database.get_unregistered_files(cursor)
+        _add_unregistered_files(file_info_queue, file_infos_from_database)
+        _start_worker_thread(shutdown_event, args.watched, args.external, file_info_queue, files)
+        with UdpClient(shutdown_event, args.verbose, config, file_info_queue) as client:
+            file_infos_not_found = client.register_file_infos()
 
-        _add_unregistered_files_to_db(cursor, no_such_files)
-        _remove_registered_files_from_db(cursor, unregistered_files, no_such_files)
-    _move_files(files, args.directory)
+        _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found)
+        _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found)
+
+    _move_files(files_and_dirs_without_duplicates, args.directory)
 
 
 def _setup_shutdown_event():
@@ -61,7 +64,7 @@ def _parse_args():
     parser.add_argument('-N', '--no-old-report',
                         help='Do not try to report old files that previously failed to get '
                              'registered')
-    parser.add_argument('files', nargs='*', help='The files to move and register')
+    parser.add_argument('files', nargs='+', help='The files to move and register')
     parser.add_argument('directory', help='The directory to move the files to')
 
     args = parser.parse_args()
@@ -97,21 +100,23 @@ def _read_config():
     }
 
 
-def _get_files_to_register(files):
-    files_to_register = set()
+def _get_paths_to_register(files):
+    files_to_register = []
     for file_ in files:
         if os.path.isdir(file_):
             for root, _, files_in_dir in os.walk(file_):
-                files_to_register.update(
-                    [os.path.join(root, file_name) for file_name in files_in_dir]
-                )
+                files_to_register += [os.path.join(root, file_name) for file_name in files_in_dir]
         else:
-            files_to_register.add(file_)
+            files_to_register.append(file_)
 
     return files_to_register
 
 
-def _start_worker_thread(watched, external, file_info_queue, files, shutdown_event):
+def _remove_duplicates(items):
+    return list(OrderedDict.fromkeys(items))
+
+
+def _start_worker_thread(shutdown_event, watched, external, file_info_queue, files):
     Thread(
         target=_process_files,
         args=(time.time(), watched, not external, shutdown_event, file_info_queue, files)
@@ -142,32 +147,35 @@ def _process_files(watched_time, watched, internal, shutdown_event, file_info_qu
         shutdown_event.set()
 
 
-def _add_unregistered_files(file_info_queue, unregistered_files):
-    for file_info in unregistered_files:
+def _add_unregistered_files(file_info_queue, unregistered_file_infos):
+    for file_info in unregistered_file_infos:
         file_info_queue.put(file_info)
 
 
-def _add_unregistered_files_to_db(cursor, no_such_files):
-    if no_such_files:
+def _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found):
+    new_file_infos_to_register = [
+        file_info for file_info in file_infos_not_found if file_info not in file_infos_from_database
+    ]
+
+    if new_file_infos_to_register:
         print("Adding files that failed to get registered to database")
         database.add_unregistered_files(
             cursor,
-            no_such_files
+            new_file_infos_to_register
         )
 
 
 # pylint: disable=invalid-name
-def _remove_registered_files_from_db(cursor, unregistered_files, no_such_files):
-    file_ids_that_got_registered = list(
-        set(unregistered_file['id'] for unregistered_file in unregistered_files) -
-        set(no_such_file['id'] for no_such_file in no_such_files if no_such_file['id'])
-    )
+def _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found):
+    ids_to_remove = [
+        file_info['id'] for file_info in file_infos_from_database if file_info not in file_infos_not_found
+    ]
 
-    if file_ids_that_got_registered:
+    if ids_to_remove:
         print("Removing files that got registered from the database")
         database.remove_files(
             cursor,
-            file_ids_that_got_registered
+            ids_to_remove
         )
 
 

@@ -17,7 +17,7 @@ def main():
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description='Handle unregister files on anidb')
+    parser = argparse.ArgumentParser(description='Handle unregistered files on anidb')
     subparsers = parser.add_subparsers(dest='action')
     subparsers.add_parser('list')
     subparsers.add_parser('clear')
@@ -39,7 +39,7 @@ def _format_size(number):
     return _format_with_unit(number, 'Ti')
 
 
-def _format_datetime(view_date):
+def _format_timestamp(view_date):
     return datetime.fromtimestamp(view_date).strftime('%Y-%m-%d %H:%M:%S')
 
 
@@ -73,7 +73,7 @@ def print_list_line(file_info):
         ed2k=file_info['ed2k'],
         internal=file_info['internal'],
         watched=file_info['watched'],
-        view_date=_format_datetime(file_info['view_date'])
+        view_date=_format_timestamp(file_info['view_date'])
     ))
 
 
