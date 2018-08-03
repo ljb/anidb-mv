@@ -9,7 +9,8 @@ def open_database(database_path=None):
     connection = None
     try:
         connection = sqlite3.connect(database_path)
-        connection.isolation_level = None  # Workaround for https://github.com/ghaering/pysqlite/issues/109
+        # Workaround for https://github.com/ghaering/pysqlite/issues/109
+        connection.isolation_level = None
         cursor = connection.cursor()
         cursor.execute('create table if not exists unregistered_files ('
                        'view_date datetime,'

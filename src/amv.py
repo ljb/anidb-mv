@@ -20,8 +20,8 @@ def main():
     args = _parse_args()
     config = _read_config()
 
-    files_and_dirs_without_duplicates = _remove_duplicates(args.files)
-    files = _get_paths_to_register(files_and_dirs_without_duplicates)
+    files_and_dirs = _remove_duplicates(args.files)
+    files = _get_paths_to_register(files_and_dirs)
     file_info_queue = Queue()
 
     with database.open_database() as cursor:
@@ -34,7 +34,7 @@ def main():
         _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found)
         _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found)
 
-    _move_files(files_and_dirs_without_duplicates, args.directory)
+    _move_files(files_and_dirs, args.directory)
 
 
 def _setup_shutdown_event():
@@ -166,7 +166,9 @@ def _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_n
 # pylint: disable=invalid-name
 def _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found):
     ids_to_remove = [
-        file_info['id'] for file_info in file_infos_from_database if file_info not in file_infos_not_found
+        file_info['id']
+        for file_info in file_infos_from_database
+        if file_info not in file_infos_not_found
     ]
 
     if ids_to_remove:
