@@ -3,7 +3,7 @@
 import argparse
 from datetime import datetime
 
-import database
+from . import database
 
 
 def main():

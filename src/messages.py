@@ -1,4 +1,4 @@
-from exceptions import AnidbProtocolException
+from .exceptions import AnidbProtocolException
 
 
 def _create_message(name, *parameters):

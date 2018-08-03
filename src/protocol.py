@@ -3,8 +3,8 @@
 import socket
 import time
 
-import exceptions
-import messages
+from . import exceptions
+from . import messages
 
 CLIENT_NAME = 'amv'
 EXTENDED_PERIOD_OF_TIME = 60

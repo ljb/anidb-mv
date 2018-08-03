@@ -1,9 +1,9 @@
 from unittest import TestCase
 from unittest.mock import call, patch, ANY
 
-import amv
-import amv_db
-import database
+from amv import amv
+from amv import amv_db
+from amv import database
 
 
 def _create_file_info(path, id_=None):

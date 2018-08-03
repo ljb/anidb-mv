@@ -11,9 +11,9 @@ from configparser import ConfigParser
 from queue import Queue
 from threading import Event, Thread
 
-import database
-from hashing import ed2k_of_path
-from protocol import UdpClient
+from . import database
+from .hashing import ed2k_of_path
+from .protocol import UdpClient
 
 
 def main():
