@@ -7,7 +7,6 @@ from . import codes
 
 SOFTWARE_URL = "https://github.com/ljb/anidb-mv"
 
-CLIENT_NAME = 'amv'
 EXTENDED_PERIOD_OF_TIME = 60
 ANIDB_HOST = 'api.anidb.net'
 ANIDB_PORT = 9000

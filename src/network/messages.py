@@ -1,5 +1,10 @@
-from ..exceptions import AnidbProtocolException
 from . import codes
+from ..exceptions import AnidbProtocolException
+
+PROTOCOL_VERSION = 3
+CLIENT_ID = 'aregister'
+CLIENT_VERSION = 1
+MESSAGE_ENCODING = 'ascii'
 
 
 def _create_message(name, *parameters):
@@ -9,7 +14,7 @@ def _create_message(name, *parameters):
             key=key,
             value=value
         ) for key, value in parameters)
-    ).encode('ascii')
+    ).encode(MESSAGE_ENCODING)
 
 
 def auth_message(username, password):
@@ -17,9 +22,9 @@ def auth_message(username, password):
         'AUTH',
         ('user', username),
         ('pass', password),
-        ('protover', 3),
-        ('client', 'aregister'),
-        ('clientver', 1),
+        ('protover', PROTOCOL_VERSION),
+        ('client', CLIENT_ID),
+        ('clientver', CLIENT_VERSION),
     )
 
 
@@ -39,10 +44,10 @@ def logout_message():
 
 
 def parse_message(datagram):
-    parts = datagram.decode('ascii').split(' ', maxsplit=1)
+    parts = datagram.decode(MESSAGE_ENCODING).split(' ', maxsplit=1)
     if len(parts) != 2:
         raise AnidbProtocolException('Failed to parse message: "{datagram}"'.format(
-            datagram=datagram.decode('ascii')
+            datagram=datagram.decode(MESSAGE_ENCODING)
         ))
 
     number = int(parts[0])
