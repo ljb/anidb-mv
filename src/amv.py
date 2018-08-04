@@ -11,7 +11,7 @@ from threading import Event, Thread
 
 from . import database
 from .hashing import ed2k_of_path
-from .protocol import UdpClient
+from .network.protocol import UdpClient
 
 
 def main():

@@ -1,4 +1,5 @@
-from .exceptions import AnidbProtocolException
+from ..exceptions import AnidbProtocolException
+from . import codes
 
 
 def _create_message(name, *parameters):
@@ -45,7 +46,7 @@ def parse_message(datagram):
         ))
 
     number = int(parts[0])
-    if number in [200, 201]:
+    if number in [codes.LOGIN_ACCEPTED, codes.LOGIN_ACCEPTED_NEW_VERSION]:
         second_parts = parts[1].split(' ', maxsplit=1)
         return {'number': number, 'session': second_parts[0], 'string': second_parts[1].rstrip()}
 

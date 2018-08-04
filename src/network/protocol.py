@@ -1,14 +1,23 @@
 import socket
 import time
 
-from . import exceptions
+from .. import exceptions
 from . import messages
+from . import codes
+
+SOFTWARE_URL = "https://github.com/ljb/anidb-mv"
 
 CLIENT_NAME = 'amv'
 EXTENDED_PERIOD_OF_TIME = 60
 ANIDB_HOST = 'api.anidb.net'
 ANIDB_PORT = 9000
 TIMEOUT = 30
+MAX_DATAGRAM_SIZE = 1400
+MAX_OUTSTANDING_PACKAGES = 5
+LOCAL_BIND_ADDRESS = '0.0.0.0'
+
+SMALL_DELAY = 2
+LARGE_DELAY = 4
 
 
 class UdpClient:
@@ -19,7 +28,7 @@ class UdpClient:
         self._shutdown_event = shutdown_event
         self._file_info_queue = file_info_queue
         self._socket = None
-        self._nr_free_packets = 5
+        self._nr_free_packets = MAX_OUTSTANDING_PACKAGES
         self._start_time = None
         self._session_id = None
 
@@ -34,14 +43,14 @@ class UdpClient:
 
         return no_such_file_infos
 
-    def _print(self, *args):
+    def _print_if_verbose_mode(self, *args):
         if self._verbose:
             print(*args)
 
     def __enter__(self):
         self._start_time = time.time()
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._socket.bind(('0.0.0.0', self._config['local_port']))
+        self._socket.bind((LOCAL_BIND_ADDRESS, self._config['local_port']))
         self._socket.settimeout(TIMEOUT)
         self._login()
         return self
@@ -55,27 +64,27 @@ class UdpClient:
             self._nr_free_packets -= 1
             return 0
         if self._extended_period_of_time():
-            return 4
+            return LARGE_DELAY
 
-        return 2
+        return SMALL_DELAY
 
     def _extended_period_of_time(self):
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
 
     def _send_with_delay(self, datagram):
-        self._print("Sending {}".format(datagram))
+        self._print_if_verbose_mode("Sending {}".format(datagram))
         delay = self._get_delay_and_decrease_counter()
         time.sleep(delay)
         self._socket.sendto(datagram, (ANIDB_HOST, ANIDB_PORT))
 
     def _receive(self):
-        datagram, _ = self._socket.recvfrom(4096)
+        datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         return messages.parse_message(datagram)
 
     @staticmethod
     def _raise_error(response):
         raise exceptions.AnidbProtocolException(
-            'Received unknown response "{number} {string}" in response to login'.format(
+            'Received unknown response "{number} {string}" in response to message'.format(
                 number=response['number'],
                 string=response['string']
             ))
@@ -85,8 +94,11 @@ class UdpClient:
             self._config['username'],
             self._config['password']))
         response = self._receive()
-        self._print('Received response', response)
-        if response['number'] not in [200, 201]:
+        self._print_if_verbose_mode('Received response', response)
+        if response['number'] == codes.LOGIN_ACCEPTED_NEW_VERSION:
+            print("This program uses an outdated version of the AniDB UDP protocol."
+                  "Please download a new version of it from {}".format(SOFTWARE_URL))
+        elif response['number'] != codes.LOGIN_ACCEPTED:
             self._raise_error(response)
         self._session_id = response['session']
 
@@ -95,21 +107,21 @@ class UdpClient:
 
     # pylint: disable=inconsistent-return-statements
     def _register_file(self, file_info):
-        self._print("Registering file {file}".format(file=file_info['path']))
+        self._print_if_verbose_mode("Registering file {file}".format(file=file_info['path']))
         self._send_with_delay(messages.mylistadd_message(
             size=file_info['size'],
             ed2k=file_info['ed2k'],
             session=self._session_id
         ))
-        datagram, _ = self._socket.recvfrom(4096)
+        datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         response = messages.parse_message(datagram)
-        if response['number'] == 320:
+        if response['number'] == codes.NO_SUCH_FILE_CODE:
             print("No such file {}".format(file_info['path']))
             return False
-        if response['number'] == 310:
+        if response['number'] == codes.FILE_ALREADY_IN_MYLIST:
             print('File {} already registered'.format(file_info['path']))
             return True
-        if response['number'] == 210:
+        if response['number'] == codes.MYLIST_ENTRY_ADDED:
             print('File {} registered successfully'.format(file_info['path']))
             return True
 
