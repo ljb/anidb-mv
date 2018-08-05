@@ -182,7 +182,10 @@ def _remove_registered_files_from_db(cursor, file_infos_from_database, file_info
 def _move_files(files, directory):
     for file_name in files:
         print("Moving {} to {}".format(os.path.basename(file_name), directory))
-        shutil.move(file_name, directory)
+        try:
+            shutil.move(file_name, directory)
+        except shutil.Error as e:
+            print("Failed to move {}: {}".format(file_name, e))
 
 
 if __name__ == '__main__':
