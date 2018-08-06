@@ -25,8 +25,12 @@ def main():
     file_info_queue = Queue()
 
     with database.open_database() as cursor:
-        file_infos_from_database = database.get_unregistered_files(cursor)
-        _add_unregistered_files(file_info_queue, file_infos_from_database)
+        if args.db_report:
+            file_infos_from_database = database.get_unregistered_files(cursor)
+            _add_unregistered_files(file_info_queue, file_infos_from_database)
+        else:
+            file_infos_from_database = []
+
         _start_worker_thread(shutdown_event, args.watched, args.external, file_info_queue, files)
         with UdpClient(shutdown_event, args.verbose, config, file_info_queue) as client:
             file_infos_not_found = client.register_file_infos()
@@ -59,9 +63,8 @@ def _parse_args():
                         help='Print protocol information')
     parser.add_argument('-n', '--no-move', action='store_false', default=True, dest='move',
                         help='Do not move the files, only register them')
-    parser.add_argument('-N', '--no-old-report',
-                        help='Do not try to report old files that previously failed to get '
-                             'registered')
+    parser.add_argument('--no-db-report', action='store_false', dest='db_report',
+                        help='Ignore old files from the database when doing the reporting')
     parser.add_argument('files', nargs='+', help='The files to move and register')
     parser.add_argument('directory', help='The directory to move the files to')
 
