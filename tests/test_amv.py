@@ -21,17 +21,17 @@ def _create_file_info(path, id_=None):
 # TODO: Make tests more stable. They fail sometimes, probably due to the mock library not being thread safe
 class AmvTest(TestCase):
     def setUp(self):
-        self.client_mock = patch('amv.UdpClient').start()
+        self.client_mock = patch('amv.amv.UdpClient').start()
         self.move_mock = patch('shutil.move').start()
-        self.remove_files_mock = patch('database.remove_files').start()
-        self.add_unregistered_files_mock = patch('database.add_unregistered_files').start()
-        self.get_unregistered_files_mock = patch('database.get_unregistered_files', return_value=[]).start()
+        self.remove_files_mock = patch('amv.database.remove_files').start()
+        self.add_unregistered_files_mock = patch('amv.database.add_unregistered_files').start()
+        self.get_unregistered_files_mock = patch('amv.database.get_unregistered_files', return_value=[]).start()
 
-        patch('database.open_database').start()
+        patch('amv.database.open_database').start()
         patch('os.path.isdir', side_effect=self._mock_isdir).start()
         patch('os.walk', side_effect=self._mock_walk).start()
         patch('os.path.getsize', return_value=1337).start()
-        patch('amv.ed2k_of_path', return_value='1' * 32).start()
+        patch('amv.amv.ed2k_of_path', return_value='1' * 32).start()
         patch('time.time', return_value=1532983833.2112887).start()
 
         self.client_mock.return_value.__enter__.return_value.register_file_infos.return_value = []
@@ -62,7 +62,7 @@ class AmvTest(TestCase):
             amv.main()
 
     @patch('sys.argv', ['amv', 'dir1', 'dir2', 'dir1', 'dir3'])
-    @patch('amv.Queue')
+    @patch('amv.amv.Queue')
     def test_source_are_directories(self, queue_mock):
         amv.main()
 
