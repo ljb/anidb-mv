@@ -17,10 +17,10 @@ from .network.client import UdpClient
 def main():
     shutdown_event = _setup_shutdown_event()
 
-    args = _parse_args()
+    args_files, args_directory, args = _parse_args()
     config = _read_config()
 
-    files_and_dirs = _remove_duplicates(args.files)
+    files_and_dirs = _remove_duplicates(args_files)
     files = _get_paths_to_register(files_and_dirs)
     file_info_queue = Queue()
 
@@ -38,7 +38,8 @@ def main():
         _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found)
         _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found)
 
-    _move_files(files_and_dirs, args.directory)
+    if args.move:
+        _move_files(files_and_dirs, args_directory)
 
 
 def _setup_shutdown_event():
@@ -66,19 +67,23 @@ def _parse_args():
     parser.add_argument('--no-db-report', action='store_false', dest='db_report',
                         help='Ignore old files from the database when doing the reporting')
     parser.add_argument('files', nargs='+', help='The files to move and register')
-    parser.add_argument('directory', help='The directory to move the files to')
+    # Note: this will never match anything and is only here to make the help text look good
+    parser.add_argument('directory', help='The directory to move the files to', nargs='?')
 
     args = parser.parse_args()
 
     if args.move:
-        if not args.directory:
+        if len(args.files) < 2:
             print("A directory argument is required when not using the --no-move flag")
             sys.exit(1)
-        elif not os.path.isdir(args.directory):
-            print("{} is not a directory".format(args.directory))
+        elif not os.path.isdir(args.files[-1]):
+            print("{} is not a directory".format(args.files[-1]))
             sys.exit(1)
 
-    return args
+    args_files = args.files[:-1] if args.move else args.files
+    args_directory = args.files[-1] if args.move else None
+
+    return args_files, args_directory, args
 
 
 def _read_config():
@@ -190,7 +195,7 @@ def _move_files(files, directory):
         print("Moving {} to {}".format(os.path.basename(file_name), directory))
         try:
             shutil.move(file_name, directory)
-        except shutil.Error as e:
+        except (shutil.Error, FileNotFoundError) as e:
             print("Failed to move {}: {}".format(file_name, e))
 
 

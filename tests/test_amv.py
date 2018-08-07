@@ -96,6 +96,23 @@ class AmvTest(TestCase):
             ]
         )])
 
+    @patch('sys.argv', ['amv', '-n', 'file1', 'file2', 'dir1'])
+    @patch('amv.amv.Queue')
+    def test_no_files_moved(self, queue_mock):
+        amv.main()
+
+        queue_mock.return_value.put.assert_has_calls([
+            call(_create_file_info('file1')),
+            call(_create_file_info('file2')),
+            call(_create_file_info('dir1/child_file1')),
+            call(_create_file_info('dir1/child_file2')),
+            call(None),
+        ])
+
+        self.remove_files_mock.assert_not_called()
+        self.move_mock.assert_not_called()
+        self.add_unregistered_files_mock.assert_not_called()
+
     @patch('sys.argv', ['amv', 'file3', 'file4', 'dir'])
     def test_register_file_success_with_files_in_db(self):
         self.get_unregistered_files_mock.return_value = [
