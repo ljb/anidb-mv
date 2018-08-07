@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='anidb-mv',
-      version='1.0',
+      version='0.1',
       author='Jonas Bengtsson',
       description='Command line client for AniDB',
       author_email='jonas@bengtsson.cc',
