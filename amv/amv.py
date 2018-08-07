@@ -132,15 +132,18 @@ def _process_files(watched_time, watched, internal, shutdown_event, file_info_qu
                 break
 
             print("Processing file {}".format(os.path.basename(file_name)))
-            file_info_queue.put({
-                'id': None,
-                'view_date': watched_time,
-                'internal': internal,
-                'watched': watched,
-                'path': file_name,
-                'size': os.path.getsize(file_name),
-                'ed2k': ed2k_of_path(file_name)
-            })
+            try:
+                file_info_queue.put({
+                    'id': None,
+                    'view_date': watched_time,
+                    'internal': internal,
+                    'watched': watched,
+                    'path': file_name,
+                    'size': os.path.getsize(file_name),
+                    'ed2k': ed2k_of_path(file_name)
+                })
+            except IOError as e:
+                print("Failed to process {}: {}".format(file_name, e))
 
         file_info_queue.put(None)
     except Exception as exception:  # pylint: disable=broad-except
