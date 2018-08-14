@@ -15,9 +15,9 @@ is the command used for handling the files that failed to get registered.
 Python 3
 
 ### Installing
-Download a release and install it with pip:
+Install it with pip:
 ```
-pip install anidb-mv-0.1.tar.gz
+pip install anidb-mv
 ```
 
 Or build and install manually:
