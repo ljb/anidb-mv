@@ -88,7 +88,7 @@ def _parse_args():
 
 def _read_config():
     xdg_config_home = os.getenv('XDG_CONFIG_HOME', '~/.config')
-    config_path = os.path.expanduser(xdg_config_home + '/amv/config')
+    config_path = os.path.expanduser(os.path.join(xdg_config_home, 'amv/config'))
     if not os.path.exists(config_path):
         config_path = os.path.expanduser('~/.amvrc')
         if not os.path.exists(config_path):
@@ -97,7 +97,7 @@ def _read_config():
                   "[anidb]\n"
                   "local_port=9000\n"
                   "username=myusername\n"
-                  "password=mypassword".format(xdg_config_home + '/amv/config'))
+                  "password=mypassword".format(os.path.join(xdg_config_home, 'amv/config')))
             sys.exit(1)
 
     parser = ConfigParser()
