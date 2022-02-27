@@ -87,15 +87,18 @@ def _parse_args():
 
 
 def _read_config():
-    config_path = os.path.expanduser('~/.amvrc')
+    xdg_config_home = os.getenv('XDG_CONFIG_HOME', '~/.config')
+    config_path = os.path.expanduser(xdg_config_home + '/amv/config')
     if not os.path.exists(config_path):
-        print("No config file exists at {}.\n"
-              "Create one with the following format:\n"
-              "[anidb]\n"
-              "local_port=9000\n"
-              "username=myusername\n"
-              "password=mypassword".format(config_path))
-        sys.exit(1)
+        config_path = os.path.expanduser('~/.amvrc')
+        if not os.path.exists(config_path):
+            print("No config file exists at {}.\n"
+                  "Create one with the following format:\n"
+                  "[anidb]\n"
+                  "local_port=9000\n"
+                  "username=myusername\n"
+                  "password=mypassword".format(xdg_config_home + '/amv/config'))
+            sys.exit(1)
 
     parser = ConfigParser()
     parser.read(config_path)
