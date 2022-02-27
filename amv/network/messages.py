@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from . import codes
 from ..exceptions import AnidbProtocolException
 
@@ -10,10 +12,7 @@ MESSAGE_ENCODING = 'ascii'
 def _create_message(name, *parameters):
     return '{name} {parameters}'.format(
         name=name,
-        parameters='&'.join('{key}={value}'.format(
-            key=key,
-            value=value
-        ) for key, value in parameters)
+        parameters=urlencode(parameters)
     ).encode(MESSAGE_ENCODING)
 
 
