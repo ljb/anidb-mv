@@ -1,8 +1,8 @@
 # AniDB-mv
 
-AniDB-mv, or amv for short, is a command line client for AniDB.  It is
+AniDB-mv, or amv for short, is a command line client for AniDB. It is
 similar to the standard mv command in Unix, but in addition to moving
-the files, it also tries to register them at AniDB.  If a file isn't
+the files, it also tries to register them at AniDB. If a file isn't
 found on AniDB, information about it is saved in a local database, and
 amv tries to register it the next time to command is used.
 
