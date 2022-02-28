@@ -71,7 +71,7 @@ class UdpClient:
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
 
     def _send_with_delay(self, datagram):
-        self._print_if_verbose_mode("Sending {}".format(datagram))
+        self._print_if_verbose_mode(f"Sending {datagram}")
         delay = self._get_delay_and_decrease_counter()
         time.sleep(delay)
         self._socket.sendto(datagram, (ANIDB_HOST, ANIDB_PORT))
@@ -83,10 +83,7 @@ class UdpClient:
     @staticmethod
     def _raise_error(response):
         raise exceptions.AnidbProtocolException(
-            'Received unknown response "{number} {string}" in response to message'.format(
-                number=response['number'],
-                string=response['string']
-            ))
+            f'Received unknown response "{response["number"]} {response["string"]}" in response to message')
 
     def _login(self):
         self._send_with_delay(messages.auth_message(
@@ -96,7 +93,7 @@ class UdpClient:
         self._print_if_verbose_mode('Received response', response)
         if response['number'] == codes.LOGIN_ACCEPTED_NEW_VERSION:
             print("This program uses an outdated version of the AniDB UDP protocol."
-                  "Please download a new version of it from {}".format(SOFTWARE_URL))
+                  f"Please download a new version of it from {SOFTWARE_URL}")
         elif response['number'] != codes.LOGIN_ACCEPTED:
             self._raise_error(response)
         self._session_id = response['session']
@@ -106,7 +103,7 @@ class UdpClient:
 
     # pylint: disable=inconsistent-return-statements
     def _register_file(self, file_info):
-        self._print_if_verbose_mode("Registering file {file}".format(file=file_info['path']))
+        self._print_if_verbose_mode(f"Registering file {file_info['path']}")
         self._send_with_delay(messages.mylistadd_message(
             size=file_info['size'],
             ed2k=file_info['ed2k'],
@@ -115,13 +112,13 @@ class UdpClient:
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         response = messages.parse_message(datagram)
         if response['number'] == codes.NO_SUCH_FILE_CODE:
-            print("No such file {}".format(file_info['path']))
+            print(f"No such file {file_info['path']}")
             return False
         if response['number'] == codes.FILE_ALREADY_IN_MYLIST:
-            print('File {} already registered'.format(file_info['path']))
+            print(f'File {file_info["path"]} already registered')
             return True
         if response['number'] == codes.MYLIST_ENTRY_ADDED:
-            print('File {} registered successfully'.format(file_info['path']))
+            print(f'File {file_info["path"]} registered successfully')
             return True
 
         self._raise_error(response)

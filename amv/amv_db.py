@@ -26,7 +26,7 @@ def _parse_args():
 
 
 def _format_with_unit(number, unit):
-    return "{:.1f}{}B".format(number, unit)
+    return f"{number:.1f}{unit}B"
 
 
 def _format_size(number):
@@ -51,18 +51,11 @@ def _handle_list():
 
 
 def _print_list_header():
-    print('{id:10}{size:10}{ed2k:34}{internal:10}{watched:9}{view_date:21}{path}'.format(
-        id='Id',
-        path='Path',
-        size='Size',
-        ed2k='ed2k',
-        internal='Internal',
-        watched='Watched',
-        view_date='Viewed',
-    ))
+    print(f'{"Id":10}{"Size":10}{"ed2k":34}{"Internal":10}{"Watched":9}{"Viewed":21}{"Path"}')
     print('-' * 120)
 
 
+# pylint: disable=consider-using-f-string
 def print_list_line(file_info):
     print('{id:<10}{size:<10}{ed2k:34}{internal:<10}{watched:<9}{view_date:21}{path}'.format(
         id=file_info['id'],

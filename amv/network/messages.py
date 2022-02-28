@@ -10,10 +10,7 @@ MESSAGE_ENCODING = 'ascii'
 
 
 def _create_message(name, *parameters):
-    return '{name} {parameters}'.format(
-        name=name,
-        parameters=urlencode(parameters)
-    ).encode(MESSAGE_ENCODING)
+    return f'{name} {urlencode(parameters)}'.encode(MESSAGE_ENCODING)
 
 
 def auth_message(username, password):
@@ -45,9 +42,7 @@ def logout_message():
 def parse_message(datagram):
     parts = datagram.decode(MESSAGE_ENCODING).split(' ', maxsplit=1)
     if len(parts) != 2:
-        raise AnidbProtocolException('Failed to parse message: "{datagram}"'.format(
-            datagram=datagram.decode(MESSAGE_ENCODING)
-        ))
+        raise AnidbProtocolException(f'Failed to parse message: "{datagram.decode(MESSAGE_ENCODING)}"')
 
     number = int(parts[0])
     if number in [codes.LOGIN_ACCEPTED, codes.LOGIN_ACCEPTED_NEW_VERSION]:

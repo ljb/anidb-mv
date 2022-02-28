@@ -77,7 +77,7 @@ def _parse_args():
             print("A directory argument is required when not using the --no-move flag")
             sys.exit(1)
         elif not os.path.isdir(args.files[-1]):
-            print("{} is not a directory".format(args.files[-1]))
+            print(f"{args.files[-1]} is not a directory")
             sys.exit(1)
 
     args_files = args.files[:-1] if args.move else args.files
@@ -92,12 +92,12 @@ def _read_config():
     if not os.path.exists(config_path):
         config_path = os.path.expanduser('~/.amvrc')
         if not os.path.exists(config_path):
-            print("No config file exists at {}.\n"
+            print(f"No config file exists at {os.path.join(xdg_config_home, 'amv/config')}.\n"
                   "Create one with the following format:\n"
                   "[anidb]\n"
                   "local_port=9000\n"
                   "username=myusername\n"
-                  "password=mypassword".format(os.path.join(xdg_config_home, 'amv/config')))
+                  "password=mypassword")
             sys.exit(1)
 
     parser = ConfigParser()
@@ -139,7 +139,7 @@ def _process_files(watched_time, watched, internal, shutdown_event, file_info_qu
             if shutdown_event.is_set():
                 break
 
-            print("Processing file {}".format(os.path.basename(file_name)))
+            print(f"Processing file {os.path.basename(file_name)}")
             try:
                 file_info_queue.put({
                     'id': None,
@@ -151,11 +151,11 @@ def _process_files(watched_time, watched, internal, shutdown_event, file_info_qu
                     'ed2k': ed2k_of_path(file_name)
                 })
             except IOError as e:
-                print("Failed to process {}: {}".format(file_name, e))
+                print(f"Failed to process {file_name}: {e}")
 
         file_info_queue.put(None)
     except Exception as exception:  # pylint: disable=broad-except
-        print("Received exception {} while processing files".format(exception))
+        print(f"Received exception {exception} while processing files")
         shutdown_event.set()
 
 
@@ -177,7 +177,6 @@ def _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_n
         )
 
 
-# pylint: disable=invalid-name
 def _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found):
     ids_to_remove = [
         file_info['id']
@@ -195,11 +194,11 @@ def _remove_registered_files_from_db(cursor, file_infos_from_database, file_info
 
 def _move_files(files, directory):
     for file_name in files:
-        print("Moving {} to {}".format(os.path.basename(file_name), directory))
+        print(f"Moving {os.path.basename(file_name)} to {directory}")
         try:
             shutil.move(file_name, directory)
         except (shutil.Error, FileNotFoundError) as e:
-            print("Failed to move {}: {}".format(file_name, e))
+            print(f"Failed to move {file_name}: {e}")
 
 
 if __name__ == '__main__':
