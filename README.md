@@ -41,3 +41,6 @@ python setup.py install
 * Add support for API keys
 
 * Make tests more stable
+
+* Change setup.py
+
