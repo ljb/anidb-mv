@@ -23,7 +23,7 @@ pip install anidb-mv
 Or build and install manually:
 ```
 python setup.py build
-python setup.py install
+pip install .
 ```
 
 ### Examples of Usage
