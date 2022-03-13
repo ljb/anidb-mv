@@ -14,7 +14,9 @@ from .hashing import ed2k_of_path
 from .network.client import UdpClient
 
 
-def main():
+# Using dependency injection this way is not Pythonic, but using mock.patch
+# in the tests causes problems otherwise since we are using a thread
+def main(file_info_queue):
     shutdown_event = _setup_shutdown_event()
 
     args_files, args_directory, args = _parse_args()
@@ -22,7 +24,6 @@ def main():
 
     files_and_dirs = _remove_duplicates(args_files)
     files = _get_paths_to_register(files_and_dirs)
-    file_info_queue = Queue()
 
     with database.open_database() as cursor:
         if args.db_report:
@@ -31,9 +32,10 @@ def main():
         else:
             file_infos_from_database = []
 
-        _start_worker_thread(shutdown_event, args.watched, args.external, file_info_queue, files)
+        thread = _start_worker_thread(shutdown_event, args.watched, args.external, file_info_queue, files)
         with UdpClient(shutdown_event, args.verbose, config, file_info_queue) as client:
             file_infos_not_found = client.register_file_infos()
+        thread.join()
 
         _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found)
         _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found)
@@ -126,10 +128,12 @@ def _remove_duplicates(items):
 
 
 def _start_worker_thread(shutdown_event, watched, external, file_info_queue, files):
-    Thread(
+    thread = Thread(
         target=_process_files,
-        args=(time.time(), watched, not external, shutdown_event, file_info_queue, files)
-    ).start()
+        args=(time.time(), watched, not external, shutdown_event, file_info_queue, files))
+    thread.start()
+
+    return thread
 
 
 # pylint: disable=too-many-arguments
@@ -202,4 +206,4 @@ def _move_files(files, directory):
 
 
 if __name__ == '__main__':
-    main()
+    main(file_info_queue=Queue())
