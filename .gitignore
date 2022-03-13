@@ -1,5 +1,7 @@
 __pycache__
 *.iml
 .idea
+anidb_mv.egg-info
 build
+dist
 venv

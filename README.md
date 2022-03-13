@@ -22,7 +22,8 @@ pip install anidb-mv
 
 Or build and install manually:
 ```
-python setup.py build
+pip install build
+python -m build
 pip install .
 ```
 
@@ -39,7 +40,5 @@ pip install .
 
 ### TODO
 * Add support for API keys
-
-* Change setup.py
 
 * Use XDG_CONFIG_HOME for database file
