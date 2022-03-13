@@ -1,7 +1,5 @@
-from threading import Lock
-from queue import Queue
 from unittest import TestCase
-from unittest.mock import call, patch, ANY, MagicMock
+from unittest.mock import call, patch, ANY
 
 from amv import amv
 from amv import amv_db
@@ -18,16 +16,6 @@ def _create_file_info(path, id_=None):
         'size': 1337,
         'ed2k': '1' * 32
     }
-
-
-def _convert_queue_to_list(queue):
-    values = []
-
-    while not queue.empty():
-        value = queue.get()
-        values.append(value)
-
-    return values
 
 
 class AmvTest(TestCase):
@@ -65,27 +53,25 @@ class AmvTest(TestCase):
     @patch('sys.argv', ['amv', 'dir'])
     def test_too_few_arguments(self):
         with self.assertRaises(SystemExit):
-            amv.main(file_info_queue=Queue())
+            amv.main()
 
     @patch('sys.argv', ['amv', 'file1', 'file2'])
     def test_destination_is_a_file(self):
         with self.assertRaises(SystemExit):
-            amv.main(file_info_queue=Queue())
+            amv.main()
 
     @patch('sys.argv', ['amv', 'dir1', 'dir2', 'dir1', 'dir3'])
-    def test_source_are_directories(self):
-        queue_mock = Queue()
-        amv.main(file_info_queue=queue_mock)
+    @patch('amv.amv.Queue')
+    def test_source_are_directories(self, queue_mock):
+        amv.main()
 
-        expected_calls = [
-            _create_file_info('dir1/child_file1'),
-            _create_file_info('dir1/child_file2'),
-            _create_file_info('dir2/child_file3'),
-            _create_file_info('dir2/child_file4'),
-            None,
-        ]
-
-        self.assertEqual(expected_calls, _convert_queue_to_list(queue_mock))
+        queue_mock.return_value.put.assert_has_calls([
+            call(_create_file_info('dir1/child_file1')),
+            call(_create_file_info('dir1/child_file2')),
+            call(_create_file_info('dir2/child_file3')),
+            call(_create_file_info('dir2/child_file4')),
+            call(None),
+        ])
 
         self.move_mock.assert_has_calls([
             call('dir1', 'dir3'),
@@ -99,7 +85,7 @@ class AmvTest(TestCase):
             _create_file_info('file2', id_=2),
         ]
 
-        amv.main(file_info_queue=Queue())
+        amv.main()
 
         self.remove_files_mock.assert_not_called()
         self.add_unregistered_files_mock.assert_has_calls([call(
@@ -110,16 +96,17 @@ class AmvTest(TestCase):
         )])
 
     @patch('sys.argv', ['amv', '-n', 'file1', 'file2', 'dir1'])
-    def test_no_files_moved(self):
-        queue_mock = Queue()
-        amv.main(file_info_queue=queue_mock)
+    @patch('amv.amv.Queue')
+    def test_no_files_moved(self, queue_mock):
+        amv.main()
 
-        expected_calls = [_create_file_info('file1'),
-                          _create_file_info('file2'),
-                          _create_file_info('dir1/child_file1'),
-                          _create_file_info('dir1/child_file2'),
-                          None]
-        self.assertEqual(expected_calls, _convert_queue_to_list(queue_mock))
+        queue_mock.return_value.put.assert_has_calls([
+            call(_create_file_info('file1')),
+            call(_create_file_info('file2')),
+            call(_create_file_info('dir1/child_file1')),
+            call(_create_file_info('dir1/child_file2')),
+            call(None),
+        ])
 
         self.remove_files_mock.assert_not_called()
         self.move_mock.assert_not_called()
@@ -132,8 +119,7 @@ class AmvTest(TestCase):
             _create_file_info('/tmp/file2', id_=2),
         ]
 
-        queue_mock = MagicMock()
-        amv.main(file_info_queue=queue_mock)
+        amv.main()
 
         self.remove_files_mock.has([call(ANY, [1, 2])])
         self.add_unregistered_files_mock.assert_not_called()
@@ -154,8 +140,7 @@ class AmvTest(TestCase):
             _create_file_info('/tmp/file2', id_=2),
         ]
 
-        queue_mock = MagicMock()
-        amv.main(file_info_queue=queue_mock)
+        amv.main()
 
         self.remove_files_mock.assert_not_called()
         self.add_unregistered_files_mock.assert_not_called()

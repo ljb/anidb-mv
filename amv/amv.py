@@ -14,9 +14,7 @@ from .hashing import ed2k_of_path
 from .network.client import UdpClient
 
 
-# Using dependency injection this way is not Pythonic, but using mock.patch
-# in the tests causes problems otherwise since we are using a thread
-def main(file_info_queue):
+def main():
     shutdown_event = _setup_shutdown_event()
 
     args_files, args_directory, args = _parse_args()
@@ -24,6 +22,7 @@ def main(file_info_queue):
 
     files_and_dirs = _remove_duplicates(args_files)
     files = _get_paths_to_register(files_and_dirs)
+    file_info_queue = Queue()
 
     with database.open_database() as cursor:
         if args.db_report:
@@ -206,4 +205,4 @@ def _move_files(files, directory):
 
 
 if __name__ == '__main__':
-    main(file_info_queue=Queue())
+    main()
