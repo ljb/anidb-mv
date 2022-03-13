@@ -40,7 +40,6 @@ python setup.py install
 ### TODO
 * Add support for API keys
 
-* Make tests more stable
-
 * Change setup.py
 
+* Use XDG_CONFIG_HOME for database file
