@@ -56,7 +56,7 @@ def _setup_shutdown_event():
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description='Move and register files on anidb')
+    parser = argparse.ArgumentParser(description='Move and register files on AniDB')
     parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
                         help='If the files have not been watched')
     parser.add_argument('--external', action='store_true',
