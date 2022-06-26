@@ -5,7 +5,7 @@ from ..exceptions import AnidbProtocolException
 
 PROTOCOL_VERSION = 3
 CLIENT_ID = 'aregister'
-CLIENT_VERSION = 1
+CLIENT_VERSION = 2
 MESSAGE_ENCODING = 'ascii'
 
 
@@ -21,6 +21,14 @@ def auth_message(username, password):
         ('protover', PROTOCOL_VERSION),
         ('client', CLIENT_ID),
         ('clientver', CLIENT_VERSION),
+    )
+
+
+def encrypt(username):
+    return _create_message(
+        'ENCRYPT',
+        ('user', username),
+        ('type', 1),
     )
 
 
