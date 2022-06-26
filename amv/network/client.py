@@ -30,7 +30,6 @@ class UdpClient:
         self._nr_free_packets = MAX_OUTSTANDING_PACKAGES
         self._start_time = None
         self._session_id = None
-        self._encryption_key = None
 
     def register_file_infos(self):
         no_such_file_infos = []
@@ -52,10 +51,6 @@ class UdpClient:
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._socket.bind((LOCAL_BIND_ADDRESS, self._config['local_port']))
         self._socket.settimeout(TIMEOUT)
-
-        if (self._config['api_key']):
-            self._turn_on_encryption()
-
         self._login()
         return self
 
@@ -90,16 +85,6 @@ class UdpClient:
         raise exceptions.AnidbProtocolException(
             f'Received unknown response "{response["number"]} {response["string"]}" in response to message')
 
-    def _turn_on_encryption(self):
-        self._send_with_delay(messages.encrypt(
-            self._config['username']))
-        response = self._receive()
-        self._print_if_verbose_mode('Received response', response)
-        if (response['number'] != codes.ENCRYPTION_ENABLED):
-            self._raise_error(response)
-
-        self._encryption_key = md5.md5sum(self._config['api_key']) + response['salt']
-
     def _login(self):
         self._send_with_delay(messages.auth_message(
             self._config['username'],
@@ -107,7 +92,7 @@ class UdpClient:
         response = self._receive()
         self._print_if_verbose_mode('Received response', response)
         if response['number'] == codes.LOGIN_ACCEPTED_NEW_VERSION:
-            print("A newer version of this program is available."
+            print("This program uses an outdated version of the AniDB UDP protocol."
                   f"Please download a new version of it from {SOFTWARE_URL}")
         elif response['number'] != codes.LOGIN_ACCEPTED:
             self._raise_error(response)

@@ -98,9 +98,7 @@ def _read_config():
                   "[anidb]\n"
                   "local_port=9000\n"
                   "username=myusername\n"
-                  "password=mypassword\n"
-                  "# This is optional and used for encryption\n"
-                  "api_key=")
+                  "password=mypassword")
             sys.exit(1)
 
     parser = ConfigParser()
@@ -108,8 +106,7 @@ def _read_config():
     return {
         'username': parser.get('anidb', 'username'),
         'password': parser.get('anidb', 'password'),
-        'local_port': parser.getint('anidb', 'local_port'),
-        'api_key': parser.get('anidb', 'api_key')
+        'local_port': parser.getint('anidb', 'local_port')
     }
 
 

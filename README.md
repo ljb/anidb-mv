@@ -39,6 +39,4 @@ pip install .
 * To clear files that failed to get registered: `amv-db clear`
 
 ### TODO
-* Add support for API keys
-
 * Use XDG_CONFIG_HOME for database file
