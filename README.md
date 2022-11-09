@@ -40,3 +40,4 @@ pip install .
 
 ### TODO
 * Use XDG_CONFIG_HOME for database file
+* Use alternative to hashlib for md4. The algoritm is deprecated in openssl.
