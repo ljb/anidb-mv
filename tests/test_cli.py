@@ -18,6 +18,11 @@ class AmvTest(TestCase):
         patch('os.path.isdir', side_effect=self._mock_isdir).start()
         patch('os.walk', side_effect=self._mock_walk).start()
         patch('os.path.getsize', return_value=1337).start()
+        patch('amv.amv._read_config', return_value={
+            'username': 'test-user',
+            'password': 'test-password',
+            'local_port': 9000,
+        }).start()
         patch('amv.amv.ed2k_of_path', return_value='1' * 32).start()
         patch('time.time', return_value=1532983833.2112887).start()
         patch('amv.amv._start_worker_thread', side_effect=self._start_worker_inline).start()
