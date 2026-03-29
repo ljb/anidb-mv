@@ -17,6 +17,11 @@ dependencies = [
   "pycryptodomex>=3.23",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4",
+]
+
 [project.scripts]
 amv = "amv.amv:main"
 amv-db = "amv.amv_db:main"

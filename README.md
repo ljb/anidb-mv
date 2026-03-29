@@ -32,6 +32,19 @@ Or install the local checkout:
 python -m pip install .
 ```
 
+### Development
+Set up a local development environment with:
+```
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .[dev]
+```
+
+Run the test suite with:
+```
+pytest -q
+```
+
 ### Examples of Usage
 * To move files and register them at AniDB: `amv file1.mkv file2.mkv /my/files/`
 
@@ -45,4 +58,3 @@ python -m pip install .
 
 ### TODO
 * Use XDG_CONFIG_HOME for database file
-* Use alternative to hashlib for md4. The algoritm is deprecated in openssl.
