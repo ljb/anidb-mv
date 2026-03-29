@@ -20,6 +20,8 @@ Install it with pip:
 python -m pip install anidb-mv
 ```
 
+This installs the required `pycryptodomex` dependency for ED2K hashing.
+
 For an isolated CLI install, use pipx:
 ```
 pipx install anidb-mv

@@ -1,9 +1,10 @@
-import hashlib
 import os
+
+from Cryptodome.Hash import MD4
 
 
 def _md4_of_block(block):
-    return hashlib.new('md4', block)
+    return MD4.new(block)
 
 
 def ed2k_of_path(path):
