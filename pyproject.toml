@@ -28,3 +28,6 @@ amv-db = "amv.amv_db:main"
 
 [tool.setuptools]
 packages = ["amv", "amv.network"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
