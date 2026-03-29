@@ -26,8 +26,8 @@ dev = [
 amv = "amv.amv:main"
 amv-db = "amv.amv_db:main"
 
-[tool.setuptools]
-packages = ["amv", "amv.network"]
+[tool.setuptools.packages.find]
+include = ["amv*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
