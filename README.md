@@ -12,19 +12,22 @@ is the command used for handling the files that failed to get registered.
 
 
 ### Prerequisites
-Python 3
+Python 3.8+
 
 ### Installing
 Install it with pip:
 ```
-pip install anidb-mv
+python -m pip install anidb-mv
 ```
 
-Or build and install manually:
+For an isolated CLI install, use pipx:
 ```
-pip install build
-python -m build
-pip install .
+pipx install anidb-mv
+```
+
+Or install the local checkout:
+```
+python -m pip install .
 ```
 
 ### Examples of Usage

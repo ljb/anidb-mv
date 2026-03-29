@@ -32,10 +32,21 @@ class AmvTest(TestCase):
         patch('os.path.getsize', return_value=1337).start()
         patch('amv.amv.ed2k_of_path', return_value='1' * 32).start()
         patch('time.time', return_value=1532983833.2112887).start()
+        patch('amv.amv._start_worker_thread', side_effect=self._start_worker_inline).start()
 
         self.client_mock.return_value.__enter__.return_value.register_file_infos.return_value = []
 
         self.addCleanup(patch.stopall)
+
+    @staticmethod
+    def _start_worker_inline(shutdown_event, watched, external, file_info_queue, files):
+        class _DummyThread:
+            @staticmethod
+            def join():
+                return None
+
+        amv._process_files(1532983833.2112887, watched, not external, shutdown_event, file_info_queue, files)
+        return _DummyThread()
 
     @staticmethod
     def _mock_isdir(path):

@@ -1,4 +1,22 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "anidb-mv"
+version = "0.1"
+description = "Command line client for AniDB"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPLv3"}
+authors = [
+  {name = "Jonas Bengtsson", email = "jonas@bengtsson.cc"},
+]
+urls = {Homepage = "https://github.com/ljb/anidb-mv"}
+
+[project.scripts]
+amv = "amv.amv:main"
+amv-db = "amv.amv_db:main"
+
+[tool.setuptools]
+packages = ["amv", "amv.network"]
