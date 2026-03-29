@@ -127,16 +127,20 @@ def _remove_duplicates(items):
 
 
 def _start_worker_thread(shutdown_event, watched, external, file_info_queue, files):
+    worker_settings = {
+        'watched_time': time.time(),
+        'watched': watched,
+        'internal': not external,
+    }
     thread = Thread(
         target=_process_files,
-        args=(time.time(), watched, not external, shutdown_event, file_info_queue, files))
+        args=(worker_settings, shutdown_event, file_info_queue, files))
     thread.start()
 
     return thread
 
 
-# pylint: disable=too-many-arguments
-def _process_files(watched_time, watched, internal, shutdown_event, file_info_queue, files):
+def _process_files(worker_settings, shutdown_event, file_info_queue, files):
     try:
         for file_name in files:
             if shutdown_event.is_set():
@@ -146,9 +150,9 @@ def _process_files(watched_time, watched, internal, shutdown_event, file_info_qu
             try:
                 file_info_queue.put({
                     'id': None,
-                    'view_date': watched_time,
-                    'internal': internal,
-                    'watched': watched,
+                    'view_date': worker_settings['watched_time'],
+                    'internal': worker_settings['internal'],
+                    'watched': worker_settings['watched'],
                     'path': file_name,
                     'size': os.path.getsize(file_name),
                     'ed2k': ed2k_of_path(file_name)

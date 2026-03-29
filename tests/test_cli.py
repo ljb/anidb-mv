@@ -33,7 +33,11 @@ class AmvTest(TestCase):
             def join():
                 return None
 
-        amv._process_files(1532983833.2112887, watched, not external, shutdown_event, file_info_queue, files)
+        amv._process_files({
+            'watched_time': 1532983833.2112887,
+            'watched': watched,
+            'internal': not external,
+        }, shutdown_event, file_info_queue, files)
         return _DummyThread()
 
     @staticmethod
