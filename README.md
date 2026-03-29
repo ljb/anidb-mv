@@ -45,6 +45,11 @@ Run the test suite with:
 pytest -q
 ```
 
+Run pylint with:
+```
+pylint --rcfile=pylintrc src/amv
+```
+
 ### Examples of Usage
 * To move files and register them at AniDB: `amv file1.mkv file2.mkv /my/files/`
 
