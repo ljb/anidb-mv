@@ -3,7 +3,7 @@ from unittest.mock import ANY, call, patch
 
 from amv import amv
 
-from tests.helpers import create_file_info
+from helpers import create_file_info
 
 
 class AmvTest(TestCase):

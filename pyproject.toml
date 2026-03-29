@@ -27,6 +27,7 @@ amv = "amv.amv:main"
 amv-db = "amv.amv_db:main"
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["amv*"]
 
 [tool.pytest.ini_options]

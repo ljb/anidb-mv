@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from amv import database
 
-from tests.helpers import create_file_info
+from helpers import create_file_info
 
 
 class DatabaseTest(TestCase):
