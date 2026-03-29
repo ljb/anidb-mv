@@ -6,8 +6,8 @@ the files, it also tries to register them at AniDB. If a file isn't
 found on AniDB, information about it is saved in a local database, and
 amv tries to register it the next time to command is used.
 
-The project consists of two commands: amv and amv-db. amv is the command
-for moving files (or for registering them without moving them), and amv-db
+The project consists of two commands: `amv` and `amv-db`. `amv` is the command
+for moving files (or for registering them without moving them), and `amv-db`
 is the command used for handling the files that failed to get registered.
 
 
@@ -22,7 +22,7 @@ python -m pip install anidb-mv
 
 This installs the required `pycryptodomex` dependency for ED2K hashing.
 
-For an isolated CLI install, use pipx:
+For an isolated CLI install, use `pipx`:
 ```
 pipx install anidb-mv
 ```
@@ -30,6 +30,13 @@ pipx install anidb-mv
 Or install the local checkout:
 ```
 python -m pip install .
+```
+
+To build a wheel and install the built package locally:
+```
+python -m pip install build
+python -m build
+python -m pip install --user dist/anidb_mv-*.whl
 ```
 
 ### Development
