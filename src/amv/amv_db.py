@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 
 from . import database
+from .file_info import FileInfo
 
 
 def main() -> None:
@@ -57,15 +58,15 @@ def _print_list_header() -> None:
 
 
 # pylint: disable=consider-using-f-string
-def print_list_line(file_info: dict) -> None:
+def print_list_line(file_info: FileInfo) -> None:
     print('{id:<10}{size:<10}{ed2k:34}{internal:<10}{watched:<9}{view_date:21}{path}'.format(
-        id=file_info['id'],
-        path=file_info['path'],
-        size=_format_size(file_info['size']),
-        ed2k=file_info['ed2k'],
-        internal=file_info['internal'],
-        watched=file_info['watched'],
-        view_date=_format_timestamp(file_info['view_date'])
+        id=file_info.id,
+        path=file_info.path,
+        size=_format_size(file_info.size),
+        ed2k=file_info.ed2k,
+        internal=file_info.internal,
+        watched=file_info.watched,
+        view_date=_format_timestamp(file_info.view_date),
     ))
 
 

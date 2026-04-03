@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from . import codes
 from ..exceptions import AnidbProtocolException
+from ..file_info import FileInfo
 
 PROTOCOL_VERSION = 3
 CLIENT_ID = 'aregister'
@@ -24,16 +25,16 @@ def auth_message(username: str, password: str) -> bytes:
     )
 
 
-def mylistadd_message(file_info: dict, session: str) -> bytes:
+def mylistadd_message(file_info: FileInfo, session: str) -> bytes:
     parameters = [
-        ('size', file_info['size']),
-        ('ed2k', file_info['ed2k']),
-        ('state', 1 if file_info['internal'] else 2),
-        ('viewed', 1 if file_info['watched'] else 0),
+        ('size', file_info.size),
+        ('ed2k', file_info.ed2k),
+        ('state', 1 if file_info.internal else 2),
+        ('viewed', 1 if file_info.watched else 0),
         ('s', session),
     ]
-    if file_info['watched']:
-        parameters.append(('viewdate', int(file_info['view_date'])))
+    if file_info.watched:
+        parameters.append(('viewdate', int(file_info.view_date)))
 
     return _create_message('MYLISTADD', *parameters)
 

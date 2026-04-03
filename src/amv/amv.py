@@ -10,6 +10,7 @@ from queue import Queue
 from threading import Event, Thread
 
 from . import database
+from .file_info import FileInfo
 from .hashing import ed2k_of_path
 from .network.client import UdpClient
 
@@ -141,7 +142,8 @@ def _start_worker_thread(shutdown_event: Event, watched: bool, external: bool,
     return thread
 
 
-def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue: Queue, files: list[str]) -> None:
+def _process_files(worker_settings: dict, shutdown_event: Event,
+                    file_info_queue: Queue, files: list[str]) -> None:
     try:
         for file_name in files:
             if shutdown_event.is_set():
@@ -149,15 +151,14 @@ def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue
 
             print(f"Processing file {os.path.basename(file_name)}")
             try:
-                file_info_queue.put({
-                    'id': None,
-                    'view_date': worker_settings['watched_time'],
-                    'internal': worker_settings['internal'],
-                    'watched': worker_settings['watched'],
-                    'path': file_name,
-                    'size': os.path.getsize(file_name),
-                    'ed2k': ed2k_of_path(file_name)
-                })
+                file_info_queue.put(FileInfo(
+                    view_date=worker_settings['watched_time'],
+                    internal=worker_settings['internal'],
+                    watched=worker_settings['watched'],
+                    path=file_name,
+                    size=os.path.getsize(file_name),
+                    ed2k=ed2k_of_path(file_name),
+                ))
             except IOError as e:
                 print(f"Failed to process {file_name}: {e}")
 
@@ -167,13 +168,13 @@ def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue
         shutdown_event.set()
 
 
-def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: list[dict]) -> None:
+def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: list[FileInfo]) -> None:
     for file_info in unregistered_file_infos:
         file_info_queue.put(file_info)
 
 
-def _add_unregistered_files_to_db(cursor: sqlite3.Cursor, file_infos_from_database: list[dict],
-                                  file_infos_not_found: list[dict]) -> None:
+def _add_unregistered_files_to_db(cursor: sqlite3.Cursor, file_infos_from_database: list[FileInfo],
+                                  file_infos_not_found: list[FileInfo]) -> None:
     new_file_infos_to_register = [
         file_info for file_info in file_infos_not_found if file_info not in file_infos_from_database
     ]
@@ -186,10 +187,10 @@ def _add_unregistered_files_to_db(cursor: sqlite3.Cursor, file_infos_from_databa
         )
 
 
-def _remove_registered_files_from_db(cursor: sqlite3.Cursor, file_infos_from_database: list[dict],
-                                     file_infos_not_found: list[dict]) -> None:
+def _remove_registered_files_from_db(cursor: sqlite3.Cursor, file_infos_from_database: list[FileInfo],
+                                     file_infos_not_found: list[FileInfo]) -> None:
     ids_to_remove = [
-        file_info['id']
+        file_info.id
         for file_info in file_infos_from_database
         if file_info not in file_infos_not_found
     ]

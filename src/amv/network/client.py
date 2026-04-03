@@ -5,6 +5,7 @@ from threading import Event
 from typing import Self
 
 from .. import exceptions
+from ..file_info import FileInfo
 from . import messages
 from . import codes
 
@@ -34,8 +35,8 @@ class UdpClient:
         self._start_time = None
         self._session_id = None
 
-    def register_file_infos(self) -> list[dict]:
-        no_such_file_infos = []
+    def register_file_infos(self) -> list[FileInfo]:
+        no_such_file_infos: list[FileInfo] = []
         while True:
             file_info = self._file_info_queue.get()
             if file_info is None or self._shutdown_event.is_set():
@@ -107,20 +108,20 @@ class UdpClient:
     def _logout(self) -> None:
         self._send_with_delay(messages.logout_message())
 
-    def _register_file(self, file_info: dict) -> bool:
-        self._print_if_verbose_mode(f"Registering file {file_info['path']}")
+    def _register_file(self, file_info: FileInfo) -> bool:
+        self._print_if_verbose_mode(f"Registering file {file_info.path}")
         self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         response = messages.parse_message(datagram)
         match response['number']:
             case codes.NO_SUCH_FILE_CODE:
-                print(f"No such file {file_info['path']}")
+                print(f"No such file {file_info.path}")
                 return False
             case codes.FILE_ALREADY_IN_MYLIST:
-                print(f'File {file_info["path"]} already registered')
+                print(f'File {file_info.path} already registered')
                 return True
             case codes.MYLIST_ENTRY_ADDED:
-                print(f'File {file_info["path"]} registered successfully')
+                print(f'File {file_info.path} registered successfully')
                 return True
             case _:
                 self._raise_error(response)
