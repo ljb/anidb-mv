@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -9,4 +9,4 @@ class FileInfo:
     watched: bool
     internal: bool
     view_date: float
-    id: int | None = None
+    id: int | None = field(default=None, compare=False)
