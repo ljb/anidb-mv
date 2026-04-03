@@ -142,10 +142,40 @@ class AmvTest(TestCase):
 
         amv.main()
 
-        self.remove_files_mock.has([call(ANY, [1, 2])])
+        self.remove_files_mock.assert_has_calls([call(ANY, [1, 2])])
         self.add_unregistered_files_mock.assert_not_called()
 
         self.move_mock.assert_has_calls([call("file3", "dir"), call("file4", "dir")])
+
+    @patch("sys.argv", ["amv", "file3", "dir"])
+    def test_db_files_removed_after_successful_registration(self):
+        self.get_unregistered_files_mock.return_value = [
+            create_file_info("/tmp/file1", id_=1),
+            create_file_info("/tmp/file2", id_=2),
+        ]
+        self.client_mock.return_value.__enter__.return_value.register_file_infos.return_value = [
+            create_file_info("/tmp/file2", id_=2),
+        ]
+
+        amv.main()
+
+        self.remove_files_mock.assert_has_calls([call(ANY, [1])])
+        self.add_unregistered_files_mock.assert_not_called()
+
+    @patch("sys.argv", ["amv", "file3", "dir"])
+    def test_new_unregistered_files_added_to_db_alongside_existing(self):
+        self.get_unregistered_files_mock.return_value = [
+            create_file_info("/tmp/file1", id_=1),
+        ]
+        self.client_mock.return_value.__enter__.return_value.register_file_infos.return_value = [
+            create_file_info("/tmp/file1", id_=1),
+            create_file_info("file3"),
+        ]
+
+        amv.main()
+
+        self.remove_files_mock.assert_not_called()
+        self.add_unregistered_files_mock.assert_has_calls([call(ANY, [create_file_info("file3")])])
 
     @patch("sys.argv", ["amv", "file3", "dir"])
     def test_unregistered_kept_in_database_on_failure(self):
