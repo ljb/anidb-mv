@@ -4,7 +4,7 @@ from threading import Event
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from helpers import create_file_info
+from conftest import create_file_info
 
 from amv.network.client import UdpClient
 

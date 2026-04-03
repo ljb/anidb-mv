@@ -1,9 +1,13 @@
-import sys
-from pathlib import Path
+from amv.file_info import FileInfo
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-BUILD_LIB = ROOT / "build" / "lib"
 
-sys.path[:] = [path for path in sys.path if Path(path).resolve() != BUILD_LIB]
-sys.path.insert(0, str(SRC))
+def create_file_info(path, id_=None):
+    return FileInfo(
+        id=id_,
+        view_date=1532983833.2112887,
+        internal=True,
+        watched=True,
+        path=path,
+        size=1337,
+        ed2k="1" * 32,
+    )
