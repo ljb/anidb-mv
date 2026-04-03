@@ -12,7 +12,7 @@ is the command used for handling the files that failed to get registered.
 
 
 ### Prerequisites
-Python 3.8+
+Python 3.10+
 
 ### Installing
 Install it with pip:
