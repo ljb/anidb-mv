@@ -104,11 +104,7 @@ class UdpClient:
     # pylint: disable=inconsistent-return-statements
     def _register_file(self, file_info):
         self._print_if_verbose_mode(f"Registering file {file_info['path']}")
-        self._send_with_delay(messages.mylistadd_message(
-            size=file_info['size'],
-            ed2k=file_info['ed2k'],
-            session=self._session_id
-        ))
+        self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         response = messages.parse_message(datagram)
         if response['number'] == codes.NO_SUCH_FILE_CODE:

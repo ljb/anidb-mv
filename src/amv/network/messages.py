@@ -24,15 +24,18 @@ def auth_message(username, password):
     )
 
 
-def mylistadd_message(size, ed2k, session):
-    return _create_message(
-        'MYLISTADD',
-        ('size', size),
-        ('ed2k', ed2k),
-        ('state', 1),
-        ('viewed', 1),
-        ('s', session)
-    )
+def mylistadd_message(file_info, session):
+    parameters = [
+        ('size', file_info['size']),
+        ('ed2k', file_info['ed2k']),
+        ('state', 1 if file_info['internal'] else 2),
+        ('viewed', 1 if file_info['watched'] else 0),
+        ('s', session),
+    ]
+    if file_info['watched']:
+        parameters.append(('viewdate', int(file_info['view_date'])))
+
+    return _create_message('MYLISTADD', *parameters)
 
 
 def logout_message():
