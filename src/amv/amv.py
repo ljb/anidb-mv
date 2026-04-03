@@ -4,7 +4,6 @@ import shutil
 import signal
 import sys
 import time
-from collections import OrderedDict
 from configparser import ConfigParser
 from queue import Queue
 from threading import Event, Thread
@@ -123,7 +122,7 @@ def _get_paths_to_register(files):
 
 
 def _remove_duplicates(items):
-    return list(OrderedDict.fromkeys(items))
+    return list(dict.fromkeys(items))
 
 
 def _start_worker_thread(shutdown_event, watched, external, file_info_queue, files):

@@ -7,7 +7,7 @@ name = "anidb-mv"
 version = "0.2.0"
 description = "Command line client for AniDB"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "GPLv3"}
 authors = [
   {name = "Jonas Bengtsson", email = "jonas@bengtsson.cc"},

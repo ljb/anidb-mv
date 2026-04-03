@@ -91,30 +91,33 @@ class UdpClient:
             self._config['password']))
         response = self._receive()
         self._print_if_verbose_mode('Received response', response)
-        if response['number'] == codes.LOGIN_ACCEPTED_NEW_VERSION:
-            print("This program uses an outdated version of the AniDB UDP protocol."
-                  f"Please download a new version of it from {SOFTWARE_URL}")
-        elif response['number'] != codes.LOGIN_ACCEPTED:
-            self._raise_error(response)
+        match response['number']:
+            case codes.LOGIN_ACCEPTED:
+                pass
+            case codes.LOGIN_ACCEPTED_NEW_VERSION:
+                print("This program uses an outdated version of the AniDB UDP protocol."
+                      f"Please download a new version of it from {SOFTWARE_URL}")
+            case _:
+                self._raise_error(response)
         self._session_id = response['session']
 
     def _logout(self):
         self._send_with_delay(messages.logout_message())
 
-    # pylint: disable=inconsistent-return-statements
     def _register_file(self, file_info):
         self._print_if_verbose_mode(f"Registering file {file_info['path']}")
         self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         response = messages.parse_message(datagram)
-        if response['number'] == codes.NO_SUCH_FILE_CODE:
-            print(f"No such file {file_info['path']}")
-            return False
-        if response['number'] == codes.FILE_ALREADY_IN_MYLIST:
-            print(f'File {file_info["path"]} already registered')
-            return True
-        if response['number'] == codes.MYLIST_ENTRY_ADDED:
-            print(f'File {file_info["path"]} registered successfully')
-            return True
-
-        self._raise_error(response)
+        match response['number']:
+            case codes.NO_SUCH_FILE_CODE:
+                print(f"No such file {file_info['path']}")
+                return False
+            case codes.FILE_ALREADY_IN_MYLIST:
+                print(f'File {file_info["path"]} already registered')
+                return True
+            case codes.MYLIST_ENTRY_ADDED:
+                print(f'File {file_info["path"]} registered successfully')
+                return True
+            case _:
+                self._raise_error(response)

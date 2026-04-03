@@ -6,12 +6,13 @@ from . import database
 
 def main():
     args = _parse_args()
-    if args.action == 'list':
-        _handle_list()
-    elif args.action == 'remove':
-        _handle_remove(args.ids)
-    elif args.action == 'clear':
-        _handle_clear()
+    match args.action:
+        case 'list':
+            _handle_list()
+        case 'remove':
+            _handle_remove(args.ids)
+        case 'clear':
+            _handle_clear()
 
 
 def _parse_args():
