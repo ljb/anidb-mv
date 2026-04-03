@@ -9,5 +9,5 @@ def create_file_info(path, id_=None):
         watched=True,
         path=path,
         size=1337,
-        ed2k='1' * 32,
+        ed2k="1" * 32,
     )

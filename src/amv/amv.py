@@ -57,20 +57,34 @@ def _setup_shutdown_event() -> Event:
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Move and register files on AniDB')
-    parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
-                        help='If the files have not been watched')
-    parser.add_argument('--external', action='store_true',
-                        help='If the files are externally stored')
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Print protocol information')
-    parser.add_argument('-n', '--no-move', action='store_false', default=True, dest='move',
-                        help='Do not move the files, only register them')
-    parser.add_argument('--no-db-report', action='store_false', dest='db_report',
-                        help='Ignore old files from the database when doing the reporting')
-    parser.add_argument('files', nargs='+', help='The files to move and register')
+    parser = argparse.ArgumentParser(description="Move and register files on AniDB")
+    parser.add_argument(
+        "-W",
+        "--not-watched",
+        action="store_false",
+        dest="watched",
+        default=True,
+        help="If the files have not been watched",
+    )
+    parser.add_argument("--external", action="store_true", help="If the files are externally stored")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print protocol information")
+    parser.add_argument(
+        "-n",
+        "--no-move",
+        action="store_false",
+        default=True,
+        dest="move",
+        help="Do not move the files, only register them",
+    )
+    parser.add_argument(
+        "--no-db-report",
+        action="store_false",
+        dest="db_report",
+        help="Ignore old files from the database when doing the reporting",
+    )
+    parser.add_argument("files", nargs="+", help="The files to move and register")
     # Note: this will never match anything and is only here to make the help text look good
-    parser.add_argument('directory', help='The directory to move the files to', nargs='?')
+    parser.add_argument("directory", help="The directory to move the files to", nargs="?")
 
     args = parser.parse_args()
 
@@ -87,25 +101,27 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _read_config() -> dict[str, str | int]:
-    xdg_config_home = os.getenv('XDG_CONFIG_HOME', '~/.config')
-    config_path = os.path.expanduser(os.path.join(xdg_config_home, 'amv/config'))
+    xdg_config_home = os.getenv("XDG_CONFIG_HOME", "~/.config")
+    config_path = os.path.expanduser(os.path.join(xdg_config_home, "amv/config"))
     if not os.path.exists(config_path):
-        config_path = os.path.expanduser('~/.amvrc')
+        config_path = os.path.expanduser("~/.amvrc")
         if not os.path.exists(config_path):
-            print(f"No config file exists at {os.path.join(xdg_config_home, 'amv/config')}.\n"
-                  "Create one with the following format:\n"
-                  "[anidb]\n"
-                  "local_port=9000\n"
-                  "username=myusername\n"
-                  "password=mypassword")
+            print(
+                f"No config file exists at {os.path.join(xdg_config_home, 'amv/config')}.\n"
+                "Create one with the following format:\n"
+                "[anidb]\n"
+                "local_port=9000\n"
+                "username=myusername\n"
+                "password=mypassword"
+            )
             sys.exit(1)
 
     parser = ConfigParser()
     parser.read(config_path)
     return {
-        'username': parser.get('anidb', 'username'),
-        'password': parser.get('anidb', 'password'),
-        'local_port': parser.getint('anidb', 'local_port')
+        "username": parser.get("anidb", "username"),
+        "password": parser.get("anidb", "password"),
+        "local_port": parser.getint("anidb", "local_port"),
     }
 
 
@@ -125,23 +141,21 @@ def _remove_duplicates(items: list[str]) -> list[str]:
     return list(dict.fromkeys(items))
 
 
-def _start_worker_thread(shutdown_event: Event, watched: bool, external: bool,
-                         file_info_queue: Queue, files: list[str]) -> Thread:
+def _start_worker_thread(
+    shutdown_event: Event, watched: bool, external: bool, file_info_queue: Queue, files: list[str]
+) -> Thread:
     worker_settings = {
-        'watched_time': time.time(),
-        'watched': watched,
-        'internal': not external,
+        "watched_time": time.time(),
+        "watched": watched,
+        "internal": not external,
     }
-    thread = Thread(
-        target=_process_files,
-        args=(worker_settings, shutdown_event, file_info_queue, files))
+    thread = Thread(target=_process_files, args=(worker_settings, shutdown_event, file_info_queue, files))
     thread.start()
 
     return thread
 
 
-def _process_files(worker_settings: dict, shutdown_event: Event,
-                    file_info_queue: Queue, files: list[str]) -> None:
+def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue: Queue, files: list[str]) -> None:
     try:
         for file_name in files:
             if shutdown_event.is_set():
@@ -149,19 +163,21 @@ def _process_files(worker_settings: dict, shutdown_event: Event,
 
             print(f"Processing file {os.path.basename(file_name)}")
             try:
-                file_info_queue.put(FileInfo(
-                    view_date=worker_settings['watched_time'],
-                    internal=worker_settings['internal'],
-                    watched=worker_settings['watched'],
-                    path=file_name,
-                    size=os.path.getsize(file_name),
-                    ed2k=ed2k_of_path(file_name),
-                ))
+                file_info_queue.put(
+                    FileInfo(
+                        view_date=worker_settings["watched_time"],
+                        internal=worker_settings["internal"],
+                        watched=worker_settings["watched"],
+                        path=file_name,
+                        size=os.path.getsize(file_name),
+                        ed2k=ed2k_of_path(file_name),
+                    )
+                )
             except IOError as e:
                 print(f"Failed to process {file_name}: {e}")
 
         file_info_queue.put(None)
-    except Exception as exception:  # pylint: disable=broad-except
+    except Exception as exception:
         print(f"Received exception {exception} while processing files")
         shutdown_event.set()
 
@@ -171,34 +187,26 @@ def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: lis
         file_info_queue.put(file_info)
 
 
-def _add_unregistered_files_to_db(cursor: sqlite3.Cursor, file_infos_from_database: list[FileInfo],
-                                  file_infos_not_found: list[FileInfo]) -> None:
+def _add_unregistered_files_to_db(
+    cursor: sqlite3.Cursor, file_infos_from_database: list[FileInfo], file_infos_not_found: list[FileInfo]
+) -> None:
     new_file_infos_to_register = [
         file_info for file_info in file_infos_not_found if file_info not in file_infos_from_database
     ]
 
     if new_file_infos_to_register:
         print("Adding files that failed to get registered to database")
-        database.add_unregistered_files(
-            cursor,
-            new_file_infos_to_register
-        )
+        database.add_unregistered_files(cursor, new_file_infos_to_register)
 
 
-def _remove_registered_files_from_db(cursor: sqlite3.Cursor, file_infos_from_database: list[FileInfo],
-                                     file_infos_not_found: list[FileInfo]) -> None:
-    ids_to_remove = [
-        file_info.id
-        for file_info in file_infos_from_database
-        if file_info not in file_infos_not_found
-    ]
+def _remove_registered_files_from_db(
+    cursor: sqlite3.Cursor, file_infos_from_database: list[FileInfo], file_infos_not_found: list[FileInfo]
+) -> None:
+    ids_to_remove = [file_info.id for file_info in file_infos_from_database if file_info not in file_infos_not_found]
 
     if ids_to_remove:
         print("Removing files that got registered from the database")
-        database.remove_files(
-            cursor,
-            ids_to_remove
-        )
+        database.remove_files(cursor, ids_to_remove)
 
 
 def _move_files(files: list[str], directory: str) -> None:
@@ -210,5 +218,5 @@ def _move_files(files: list[str], directory: str) -> None:
             print(f"Failed to move {file_name}: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

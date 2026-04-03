@@ -19,7 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "pylint>=3.3",
+  "ruff>=0.11",
   "pytest>=8.4",
 ]
 
@@ -30,6 +30,12 @@ amv-db = "amv.amv_db:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["amv*"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

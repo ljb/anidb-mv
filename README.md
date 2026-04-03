@@ -52,9 +52,10 @@ Run the test suite with:
 pytest -q
 ```
 
-Run pylint with:
+Run ruff with:
 ```
-pylint --rcfile=pylintrc src/amv
+ruff check
+ruff format --check
 ```
 
 ### Examples of Usage

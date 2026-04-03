@@ -6,25 +6,23 @@ from typing import Self
 
 from .. import exceptions
 from ..file_info import FileInfo
-from . import messages
-from . import codes
+from . import codes, messages
 
 SOFTWARE_URL = "https://github.com/ljb/anidb-mv"
 
 EXTENDED_PERIOD_OF_TIME = 60
-ANIDB_HOST = 'api.anidb.net'
+ANIDB_HOST = "api.anidb.net"
 ANIDB_PORT = 9000
 TIMEOUT = 30
 MAX_DATAGRAM_SIZE = 1400
 MAX_OUTSTANDING_PACKAGES = 5
-LOCAL_BIND_ADDRESS = '0.0.0.0'
+LOCAL_BIND_ADDRESS = "0.0.0.0"
 
 SMALL_DELAY = 2
 LARGE_DELAY = 4
 
 
 class UdpClient:
-    # pylint: disable=too-many-instance-attributes
     def __init__(self, shutdown_event: Event, verbose: bool, config: dict, file_info_queue: Queue) -> None:
         self._verbose = verbose
         self._config = config
@@ -53,7 +51,7 @@ class UdpClient:
     def __enter__(self) -> Self:
         self._start_time = time.time()
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._socket.bind((LOCAL_BIND_ADDRESS, self._config['local_port']))
+        self._socket.bind((LOCAL_BIND_ADDRESS, self._config["local_port"]))
         self._socket.settimeout(TIMEOUT)
         self._login()
         return self
@@ -87,23 +85,24 @@ class UdpClient:
     @staticmethod
     def _raise_error(response: dict[str, str | int]) -> None:
         raise exceptions.AnidbProtocolException(
-            f'Received unknown response "{response["number"]} {response["string"]}" in response to message')
+            f'Received unknown response "{response["number"]} {response["string"]}" in response to message'
+        )
 
     def _login(self) -> None:
-        self._send_with_delay(messages.auth_message(
-            self._config['username'],
-            self._config['password']))
+        self._send_with_delay(messages.auth_message(self._config["username"], self._config["password"]))
         response = self._receive()
-        self._print_if_verbose_mode('Received response', response)
-        match response['number']:
+        self._print_if_verbose_mode("Received response", response)
+        match response["number"]:
             case codes.LOGIN_ACCEPTED:
                 pass
             case codes.LOGIN_ACCEPTED_NEW_VERSION:
-                print("This program uses an outdated version of the AniDB UDP protocol."
-                      f"Please download a new version of it from {SOFTWARE_URL}")
+                print(
+                    "This program uses an outdated version of the AniDB UDP protocol."
+                    f"Please download a new version of it from {SOFTWARE_URL}"
+                )
             case _:
                 self._raise_error(response)
-        self._session_id = response['session']
+        self._session_id = response["session"]
 
     def _logout(self) -> None:
         self._send_with_delay(messages.logout_message())
@@ -113,15 +112,15 @@ class UdpClient:
         self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         response = messages.parse_message(datagram)
-        match response['number']:
+        match response["number"]:
             case codes.NO_SUCH_FILE_CODE:
                 print(f"No such file {file_info.path}")
                 return False
             case codes.FILE_ALREADY_IN_MYLIST:
-                print(f'File {file_info.path} already registered')
+                print(f"File {file_info.path} already registered")
                 return True
             case codes.MYLIST_ENTRY_ADDED:
-                print(f'File {file_info.path} registered successfully')
+                print(f"File {file_info.path} registered successfully")
                 return True
             case _:
                 self._raise_error(response)
