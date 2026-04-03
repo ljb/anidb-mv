@@ -15,10 +15,6 @@ def ed2k_of_path(path):
         if os.path.getsize(path) < block_size:
             digests.append(file_.read())
         else:
-            while True:
-                block = file_.read(block_size)
-                digest = _md4_of_block(block).digest()
-                digests.append(digest)
-                if len(block) < block_size:
-                    break
+            while block := file_.read(block_size):
+                digests.append(_md4_of_block(block).digest())
     return _md4_of_block(b''.join(digests)).hexdigest()
