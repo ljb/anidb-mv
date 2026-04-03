@@ -3,11 +3,11 @@ import os
 from Cryptodome.Hash import MD4
 
 
-def _md4_of_block(block):
+def _md4_of_block(block: bytes) -> MD4.MD4Hash:
     return MD4.new(block)
 
 
-def ed2k_of_path(path):
+def ed2k_of_path(path: str) -> str:
     block_size = 9500 * 1024
     digests = []
 

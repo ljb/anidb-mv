@@ -2,6 +2,7 @@ import argparse
 import os
 import shutil
 import signal
+import sqlite3
 import sys
 import time
 from configparser import ConfigParser
@@ -13,7 +14,7 @@ from .hashing import ed2k_of_path
 from .network.client import UdpClient
 
 
-def main():
+def main() -> None:
     shutdown_event = _setup_shutdown_event()
 
     args_files, args_directory, args = _parse_args()
@@ -42,7 +43,7 @@ def main():
         _move_files(files_and_dirs, args_directory)
 
 
-def _setup_shutdown_event():
+def _setup_shutdown_event() -> Event:
     shutdown_event = Event()
 
     def signal_handler(*_):
@@ -54,7 +55,7 @@ def _setup_shutdown_event():
     return shutdown_event
 
 
-def _parse_args():
+def _parse_args() -> tuple[list[str], str | None, argparse.Namespace]:
     parser = argparse.ArgumentParser(description='Move and register files on AniDB')
     parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
                         help='If the files have not been watched')
@@ -86,7 +87,7 @@ def _parse_args():
     return args_files, args_directory, args
 
 
-def _read_config():
+def _read_config() -> dict[str, str | int]:
     xdg_config_home = os.getenv('XDG_CONFIG_HOME', '~/.config')
     config_path = os.path.expanduser(os.path.join(xdg_config_home, 'amv/config'))
     if not os.path.exists(config_path):
@@ -109,7 +110,7 @@ def _read_config():
     }
 
 
-def _get_paths_to_register(files):
+def _get_paths_to_register(files: list[str]) -> list[str]:
     files_to_register = []
     for file_ in files:
         if os.path.isdir(file_):
@@ -121,11 +122,12 @@ def _get_paths_to_register(files):
     return files_to_register
 
 
-def _remove_duplicates(items):
+def _remove_duplicates(items: list[str]) -> list[str]:
     return list(dict.fromkeys(items))
 
 
-def _start_worker_thread(shutdown_event, watched, external, file_info_queue, files):
+def _start_worker_thread(shutdown_event: Event, watched: bool, external: bool,
+                         file_info_queue: Queue, files: list[str]) -> Thread:
     worker_settings = {
         'watched_time': time.time(),
         'watched': watched,
@@ -139,7 +141,7 @@ def _start_worker_thread(shutdown_event, watched, external, file_info_queue, fil
     return thread
 
 
-def _process_files(worker_settings, shutdown_event, file_info_queue, files):
+def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue: Queue, files: list[str]) -> None:
     try:
         for file_name in files:
             if shutdown_event.is_set():
@@ -165,12 +167,13 @@ def _process_files(worker_settings, shutdown_event, file_info_queue, files):
         shutdown_event.set()
 
 
-def _add_unregistered_files(file_info_queue, unregistered_file_infos):
+def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: list[dict]) -> None:
     for file_info in unregistered_file_infos:
         file_info_queue.put(file_info)
 
 
-def _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found):
+def _add_unregistered_files_to_db(cursor: sqlite3.Cursor, file_infos_from_database: list[dict],
+                                  file_infos_not_found: list[dict]) -> None:
     new_file_infos_to_register = [
         file_info for file_info in file_infos_not_found if file_info not in file_infos_from_database
     ]
@@ -183,7 +186,8 @@ def _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_n
         )
 
 
-def _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found):
+def _remove_registered_files_from_db(cursor: sqlite3.Cursor, file_infos_from_database: list[dict],
+                                     file_infos_not_found: list[dict]) -> None:
     ids_to_remove = [
         file_info['id']
         for file_info in file_infos_from_database
@@ -198,7 +202,7 @@ def _remove_registered_files_from_db(cursor, file_infos_from_database, file_info
         )
 
 
-def _move_files(files, directory):
+def _move_files(files: list[str], directory: str) -> None:
     for file_name in files:
         print(f"Moving {os.path.basename(file_name)} to {directory}")
         try:

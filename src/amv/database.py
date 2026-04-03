@@ -1,10 +1,11 @@
 import os
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 
 
 @contextmanager
-def open_database(database_path=None):
+def open_database(database_path: str | None = None) -> Generator[sqlite3.Cursor]:
     database_path = database_path or os.path.expanduser('~/.amv.sqlite3')
     connection = None
     try:
@@ -27,16 +28,16 @@ def open_database(database_path=None):
             connection.close()
 
 
-def clear(cursor):
+def clear(cursor: sqlite3.Cursor) -> None:
     cursor.execute('delete from unregistered_files')
     cursor.execute('vacuum')
 
 
-def remove_files(cursor, ids):
+def remove_files(cursor: sqlite3.Cursor, ids: list[int]) -> None:
     cursor.executemany('delete from unregistered_files where rowid=?', ((rowid,) for rowid in ids))
 
 
-def get_unregistered_files(cursor):
+def get_unregistered_files(cursor: sqlite3.Cursor) -> list[dict]:
     results = cursor.execute('select rowid, * from unregistered_files')
     return [{
         'id': result[0],
@@ -49,7 +50,7 @@ def get_unregistered_files(cursor):
     } for result in results]
 
 
-def add_unregistered_files(cursor, file_infos):
+def add_unregistered_files(cursor: sqlite3.Cursor, file_infos: list[dict]) -> None:
     cursor.executemany('insert into unregistered_files values (?, ?, ?, ?, ? ,?)', ((
         file_info['view_date'],
         file_info['watched'],

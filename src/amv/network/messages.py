@@ -9,11 +9,11 @@ CLIENT_VERSION = 1
 MESSAGE_ENCODING = 'ascii'
 
 
-def _create_message(name, *parameters):
+def _create_message(name: str, *parameters: tuple[str, str | int]) -> bytes:
     return f'{name} {urlencode(parameters)}'.encode(MESSAGE_ENCODING)
 
 
-def auth_message(username, password):
+def auth_message(username: str, password: str) -> bytes:
     return _create_message(
         'AUTH',
         ('user', username),
@@ -24,7 +24,7 @@ def auth_message(username, password):
     )
 
 
-def mylistadd_message(file_info, session):
+def mylistadd_message(file_info: dict, session: str) -> bytes:
     parameters = [
         ('size', file_info['size']),
         ('ed2k', file_info['ed2k']),
@@ -38,11 +38,11 @@ def mylistadd_message(file_info, session):
     return _create_message('MYLISTADD', *parameters)
 
 
-def logout_message():
+def logout_message() -> bytes:
     return b'LOGOUT'
 
 
-def parse_message(datagram):
+def parse_message(datagram: bytes) -> dict[str, str | int]:
     parts = datagram.decode(MESSAGE_ENCODING).split(' ', maxsplit=1)
     if len(parts) != 2:
         raise AnidbProtocolException(f'Failed to parse message: "{datagram.decode(MESSAGE_ENCODING)}"')

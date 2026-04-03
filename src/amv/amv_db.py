@@ -4,7 +4,7 @@ from datetime import datetime
 from . import database
 
 
-def main():
+def main() -> None:
     args = _parse_args()
     match args.action:
         case 'list':
@@ -15,7 +15,7 @@ def main():
             _handle_clear()
 
 
-def _parse_args():
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Handle unregistered files on anidb')
     subparsers = parser.add_subparsers(dest='action')
     subparsers.add_parser('list')
@@ -26,11 +26,11 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _format_with_unit(number, unit):
+def _format_with_unit(number: float, unit: str) -> str:
     return f"{number:.1f}{unit}B"
 
 
-def _format_size(number):
+def _format_size(number: float) -> str:
     for unit in ['', 'Ki', 'Mi', 'Gi']:
         if abs(number) < 1024:
             return _format_with_unit(number, unit)
@@ -38,11 +38,11 @@ def _format_size(number):
     return _format_with_unit(number, 'Ti')
 
 
-def _format_timestamp(view_date):
+def _format_timestamp(view_date: float) -> str:
     return datetime.fromtimestamp(view_date).strftime('%Y-%m-%d %H:%M:%S')
 
 
-def _handle_list():
+def _handle_list() -> None:
     with database.open_database() as cursor:
         file_infos = database.get_unregistered_files(cursor)
         if file_infos:
@@ -51,13 +51,13 @@ def _handle_list():
                 print_list_line(file_info)
 
 
-def _print_list_header():
+def _print_list_header() -> None:
     print(f'{"Id":10}{"Size":10}{"ed2k":34}{"Internal":10}{"Watched":9}{"Viewed":21}{"Path"}')
     print('-' * 120)
 
 
 # pylint: disable=consider-using-f-string
-def print_list_line(file_info):
+def print_list_line(file_info: dict) -> None:
     print('{id:<10}{size:<10}{ed2k:34}{internal:<10}{watched:<9}{view_date:21}{path}'.format(
         id=file_info['id'],
         path=file_info['path'],
@@ -69,12 +69,12 @@ def print_list_line(file_info):
     ))
 
 
-def _handle_clear():
+def _handle_clear() -> None:
     with database.open_database() as cursor:
         database.clear(cursor)
 
 
-def _handle_remove(ids):
+def _handle_remove(ids: list[int]) -> None:
     with database.open_database() as cursor:
         database.remove_files(cursor, ids)
 

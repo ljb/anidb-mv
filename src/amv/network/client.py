@@ -1,5 +1,8 @@
 import socket
 import time
+from queue import Queue
+from threading import Event
+from typing import Self
 
 from .. import exceptions
 from . import messages
@@ -21,7 +24,7 @@ LARGE_DELAY = 4
 
 class UdpClient:
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, shutdown_event, verbose, config, file_info_queue):
+    def __init__(self, shutdown_event: Event, verbose: bool, config: dict, file_info_queue: Queue) -> None:
         self._verbose = verbose
         self._config = config
         self._shutdown_event = shutdown_event
@@ -31,7 +34,7 @@ class UdpClient:
         self._start_time = None
         self._session_id = None
 
-    def register_file_infos(self):
+    def register_file_infos(self) -> list[dict]:
         no_such_file_infos = []
         while True:
             file_info = self._file_info_queue.get()
@@ -42,11 +45,11 @@ class UdpClient:
 
         return no_such_file_infos
 
-    def _print_if_verbose_mode(self, *args):
+    def _print_if_verbose_mode(self, *args: object) -> None:
         if self._verbose:
             print(*args)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self._start_time = time.time()
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._socket.bind((LOCAL_BIND_ADDRESS, self._config['local_port']))
@@ -54,11 +57,11 @@ class UdpClient:
         self._login()
         return self
 
-    def __exit__(self, *_):
+    def __exit__(self, *_: object) -> None:
         self._shutdown_event.set()
         self._logout()
 
-    def _get_delay_and_decrease_counter(self):
+    def _get_delay_and_decrease_counter(self) -> int:
         if self._nr_free_packets > 0:
             self._nr_free_packets -= 1
             return 0
@@ -67,25 +70,25 @@ class UdpClient:
 
         return SMALL_DELAY
 
-    def _extended_period_of_time(self):
+    def _extended_period_of_time(self) -> bool:
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
 
-    def _send_with_delay(self, datagram):
+    def _send_with_delay(self, datagram: bytes) -> None:
         self._print_if_verbose_mode(f"Sending {datagram}")
         delay = self._get_delay_and_decrease_counter()
         time.sleep(delay)
         self._socket.sendto(datagram, (ANIDB_HOST, ANIDB_PORT))
 
-    def _receive(self):
+    def _receive(self) -> dict[str, str | int]:
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         return messages.parse_message(datagram)
 
     @staticmethod
-    def _raise_error(response):
+    def _raise_error(response: dict[str, str | int]) -> None:
         raise exceptions.AnidbProtocolException(
             f'Received unknown response "{response["number"]} {response["string"]}" in response to message')
 
-    def _login(self):
+    def _login(self) -> None:
         self._send_with_delay(messages.auth_message(
             self._config['username'],
             self._config['password']))
@@ -101,10 +104,10 @@ class UdpClient:
                 self._raise_error(response)
         self._session_id = response['session']
 
-    def _logout(self):
+    def _logout(self) -> None:
         self._send_with_delay(messages.logout_message())
 
-    def _register_file(self, file_info):
+    def _register_file(self, file_info: dict) -> bool:
         self._print_if_verbose_mode(f"Registering file {file_info['path']}")
         self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
         datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
