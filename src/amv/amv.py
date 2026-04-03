@@ -18,10 +18,10 @@ from .network.client import UdpClient
 def main() -> None:
     shutdown_event = _setup_shutdown_event()
 
-    args_files, args_directory, args = _parse_args()
+    args = _parse_args()
     config = _read_config()
 
-    files_and_dirs = _remove_duplicates(args_files)
+    files_and_dirs = _remove_duplicates(args.files)
     files = _get_paths_to_register(files_and_dirs)
     file_info_queue = Queue()
 
@@ -41,7 +41,7 @@ def main() -> None:
         _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found)
 
     if args.move:
-        _move_files(files_and_dirs, args_directory)
+        _move_files(files_and_dirs, args.directory)
 
 
 def _setup_shutdown_event() -> Event:
@@ -56,7 +56,7 @@ def _setup_shutdown_event() -> Event:
     return shutdown_event
 
 
-def _parse_args() -> tuple[list[str], str | None, argparse.Namespace]:
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Move and register files on AniDB')
     parser.add_argument('-W', '--not-watched', action='store_false', dest='watched', default=True,
                         help='If the files have not been watched')
@@ -81,11 +81,9 @@ def _parse_args() -> tuple[list[str], str | None, argparse.Namespace]:
         elif not os.path.isdir(args.files[-1]):
             print(f"{args.files[-1]} is not a directory")
             sys.exit(1)
+        args.directory = args.files.pop()
 
-    args_files = args.files[:-1] if args.move else args.files
-    args_directory = args.files[-1] if args.move else None
-
-    return args_files, args_directory, args
+    return args
 
 
 def _read_config() -> dict[str, str | int]:
