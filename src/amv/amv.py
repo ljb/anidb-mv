@@ -175,11 +175,11 @@ def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue
                 )
             except IOError as e:
                 print(f"Failed to process {file_name}: {e}")
-
-        file_info_queue.put(None)
     except Exception as exception:
         print(f"Received exception {exception} while processing files")
         shutdown_event.set()
+    finally:
+        file_info_queue.put(None)
 
 
 def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: list[FileInfo]) -> None:
