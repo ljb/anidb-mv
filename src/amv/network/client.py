@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import socket
 import time
 from queue import Queue
 from threading import Event
-from typing import Self
 
 from .. import exceptions
 from ..file_info import FileInfo
@@ -48,7 +49,7 @@ class UdpClient:
         if self._verbose:
             print(*args)
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> UdpClient:
         self._start_time = time.time()
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._socket.bind((LOCAL_BIND_ADDRESS, self._config["local_port"]))
