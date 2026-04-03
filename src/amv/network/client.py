@@ -59,7 +59,10 @@ class UdpClient:
 
     def __exit__(self, *_: object) -> None:
         self._shutdown_event.set()
-        self._logout()
+        try:
+            self._logout()
+        finally:
+            self._socket.close()
 
     def _get_delay_and_decrease_counter(self) -> int:
         if self._nr_free_packets > 0:
@@ -110,8 +113,12 @@ class UdpClient:
 
     def _register_file(self, file_info: FileInfo) -> bool:
         self._print_if_verbose_mode(f"Registering file {file_info.path}")
-        self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
-        datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
+        try:
+            self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
+            datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
+        except socket.timeout:
+            print(f"Timed out registering {file_info.path}")
+            return False
         response = messages.parse_message(datagram)
         match response["number"]:
             case codes.NO_SUCH_FILE_CODE:
