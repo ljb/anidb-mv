@@ -61,8 +61,7 @@ def _setup_shutdown_event() -> Event:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Move and register files on AniDB")
     parser.add_argument(
-        "-W",
-        "--not-watched",
+        "--unwatched",
         action="store_false",
         dest="watched",
         default=True,
