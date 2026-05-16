@@ -71,6 +71,3 @@ ruff format --check
 * To clear files that failed to get registered: `amv-db clear`
 
 * To retry registering files saved in the database: `amv -r file1.mkv /my/files/`
-
-### TODO
-* Use XDG_CONFIG_HOME for database file

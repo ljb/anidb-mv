@@ -6,9 +6,19 @@ from contextlib import contextmanager
 from .file_info import FileInfo
 
 
+def _default_database_path() -> str:
+    legacy_path = os.path.expanduser("~/.amv.sqlite3")
+    if os.path.exists(legacy_path):
+        return legacy_path
+    xdg_data_home = os.getenv("XDG_DATA_HOME", "~/.local/share")
+    return os.path.expanduser(os.path.join(xdg_data_home, "amv", "amv.sqlite3"))
+
+
 @contextmanager
 def open_database(database_path: str | None = None) -> Generator[sqlite3.Cursor]:
-    database_path = database_path or os.path.expanduser("~/.amv.sqlite3")
+    if database_path is None:
+        database_path = _default_database_path()
+        os.makedirs(os.path.dirname(database_path), exist_ok=True)
     connection = None
     try:
         connection = sqlite3.connect(database_path)
