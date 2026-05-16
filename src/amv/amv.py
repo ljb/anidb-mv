@@ -65,33 +65,33 @@ def _parse_args() -> argparse.Namespace:
         action="store_false",
         dest="watched",
         default=True,
-        help="If the files have not been watched",
+        help="Mark the files as not watched",
     )
-    parser.add_argument("--external", action="store_true", help="If the files are externally stored")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Print protocol information")
+    parser.add_argument("--external", action="store_true", help="Mark the files as stored externally")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print AniDB protocol messages")
     parser.add_argument(
         "-n",
         "--no-move",
         action="store_false",
         default=True,
         dest="move",
-        help="Do not move the files, only register them",
+        help="Register the files without moving them",
     )
     parser.add_argument(
         "-r",
         "--retry-unregistered",
         action="store_true",
-        help="Also try to register files previously stored in the database",
+        help="Also retry files saved in the database",
     )
-    parser.add_argument("files", nargs="+", help="The files to move and register")
+    parser.add_argument("files", nargs="+", help="Files to move and register")
     # Note: this will never match anything and is only here to make the help text look good
-    parser.add_argument("directory", help="The directory to move the files to", nargs="?")
+    parser.add_argument("directory", help="Destination directory", nargs="?")
 
     args = parser.parse_args()
 
     if args.move:
         if len(args.files) < 2:
-            print("A directory argument is required when not using the --no-move flag")
+            print("A destination directory is required (use --no-move to skip moving)")
             sys.exit(1)
         elif not os.path.isdir(args.files[-1]):
             print(f"{args.files[-1]} is not a directory")

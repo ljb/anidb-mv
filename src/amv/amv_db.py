@@ -17,7 +17,7 @@ def main() -> None:
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Handle unregistered files on anidb")
+    parser = argparse.ArgumentParser(description="Manage files that failed to register with AniDB")
     subparsers = parser.add_subparsers(dest="action")
     subparsers.add_parser("list")
     subparsers.add_parser("clear")

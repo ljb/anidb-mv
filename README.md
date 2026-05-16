@@ -3,7 +3,7 @@
 AniDB-mv, or amv for short, is a command line client for AniDB. It is
 similar to the standard mv command in Unix, but in addition to moving
 the files, it also tries to register them at AniDB. If a file isn't
-found on AniDB, information about it is saved in a local database.
+found at AniDB, information about it is saved in a local database.
 Use `amv -r` (or `--retry-unregistered`) to attempt to register the
 files in the database again.
 
