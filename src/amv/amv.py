@@ -26,19 +26,21 @@ def main() -> None:
     file_info_queue = Queue()
 
     with database.open_database() as cursor:
-        if args.db_report:
-            file_infos_from_database = database.get_unregistered_files(cursor)
-            _add_unregistered_files(file_info_queue, file_infos_from_database)
+        unregistered_in_database = database.get_unregistered_files(cursor)
+        if args.retry_unregistered:
+            _add_unregistered_files(file_info_queue, unregistered_in_database)
+            tracked_db_files = unregistered_in_database
         else:
-            file_infos_from_database = []
+            _report_unregistered_in_database(unregistered_in_database)
+            tracked_db_files = []
 
         thread = _start_worker_thread(shutdown_event, args.watched, args.external, file_info_queue, files)
         with UdpClient(shutdown_event, args.verbose, config, file_info_queue) as client:
             file_infos_not_found = client.register_file_infos()
         thread.join()
 
-        _add_unregistered_files_to_db(cursor, file_infos_from_database, file_infos_not_found)
-        _remove_registered_files_from_db(cursor, file_infos_from_database, file_infos_not_found)
+        _add_unregistered_files_to_db(cursor, tracked_db_files, file_infos_not_found)
+        _remove_registered_files_from_db(cursor, tracked_db_files, file_infos_not_found)
 
     if args.move:
         _move_files(files_and_dirs, args.directory)
@@ -77,10 +79,10 @@ def _parse_args() -> argparse.Namespace:
         help="Do not move the files, only register them",
     )
     parser.add_argument(
-        "--no-db-report",
-        action="store_false",
-        dest="db_report",
-        help="Ignore old files from the database when doing the reporting",
+        "-r",
+        "--retry-unregistered",
+        action="store_true",
+        help="Also try to register files previously stored in the database",
     )
     parser.add_argument("files", nargs="+", help="The files to move and register")
     # Note: this will never match anything and is only here to make the help text look good
@@ -185,6 +187,17 @@ def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue
 def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: list[FileInfo]) -> None:
     for file_info in unregistered_file_infos:
         file_info_queue.put(file_info)
+
+
+def _report_unregistered_in_database(unregistered_file_infos: list[FileInfo]) -> None:
+    count = len(unregistered_file_infos)
+    if count == 0:
+        return
+    noun = "file" if count == 1 else "files"
+    print(
+        f"{count} unregistered {noun} in database. "
+        "Run `amv-db list` for details or `amv --retry-unregistered ...` to try registering them again."
+    )
 
 
 def _add_unregistered_files_to_db(
