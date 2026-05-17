@@ -74,3 +74,6 @@ ruff format --check
 * To retry registering files saved in the database: `amv-db retry`
 
 * To retry registering during a move: `amv -r file1.mkv /my/files/`
+
+* To replace a broken pre-release with the official release while keeping
+  the original watch date: `amv-db replace /anime/broken.mkv /downloads/official.mkv`
