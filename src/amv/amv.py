@@ -204,10 +204,12 @@ def _report_unregistered_in_database(unregistered_file_infos: list[FileInfo]) ->
     if count == 0:
         return
     noun = "file" if count == 1 else "files"
-    print(
-        f"{count} unregistered {noun} in database. "
-        "Run `amv-db list` for details or `amv --retry-unregistered ...` to try registering them again."
-    )
+    print(f"{count} unregistered {noun} in database:")
+    for file_info in unregistered_file_infos:
+        print(f"  {file_info.path}")
+    print()
+    print("Run amv-db retry to try registering them again.")
+    print()
 
 
 def _add_unregistered_files_to_db(

@@ -221,10 +221,13 @@ class AmvTest(TestCase):
         with patch("builtins.print") as print_mock:
             amv.main()
 
-        printed = " ".join(str(c.args[0]) for c in print_mock.call_args_list if c.args)
-        self.assertIn("2 unregistered files in database", printed)
-        self.assertIn("amv-db list", printed)
-        self.assertIn("--retry-unregistered", printed)
+        printed_lines = [str(c.args[0]) if c.args else "" for c in print_mock.call_args_list]
+        printed = "\n".join(printed_lines)
+        self.assertIn("2 unregistered files in database:", printed)
+        self.assertIn("/tmp/file1", printed)
+        self.assertIn("/tmp/file2", printed)
+        self.assertIn("amv-db retry", printed)
+        self.assertIn("", printed_lines, "Expected a blank line after the summary")
 
     @patch("sys.argv", ["amv", "file3", "dir"])
     def test_db_summary_singular_form(self):
