@@ -19,7 +19,7 @@ class AmvTest(TestCase):
         patch("amv.amv.os.walk", side_effect=self._mock_walk).start()
         patch("amv.amv.os.path.getsize", return_value=1337).start()
         patch(
-            "amv.amv._read_config",
+            "amv.amv.read_config",
             return_value={
                 "username": "test-user",
                 "password": "test-password",

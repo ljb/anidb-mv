@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 
 from . import database
+from .amv import read_config, register_file_infos, setup_shutdown_event
 from .file_info import FileInfo
 
 
@@ -14,6 +15,8 @@ def main() -> None:
             _handle_remove(args.ids)
         case "clear":
             _handle_clear()
+        case "retry":
+            _handle_retry(args.verbose)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -23,6 +26,8 @@ def _parse_args() -> argparse.Namespace:
     subparsers.add_parser("clear")
     remove_parser = subparsers.add_parser("remove")
     remove_parser.add_argument("ids", nargs="+", type=int)
+    retry_parser = subparsers.add_parser("retry")
+    retry_parser.add_argument("-v", "--verbose", action="store_true", help="Print AniDB protocol messages")
 
     return parser.parse_args()
 
@@ -79,6 +84,22 @@ def _handle_clear() -> None:
 def _handle_remove(ids: list[int]) -> None:
     with database.open_database() as cursor:
         database.remove_files(cursor, ids)
+
+
+def _handle_retry(verbose: bool) -> None:
+    shutdown_event = setup_shutdown_event()
+    config = read_config()
+    with database.open_database() as cursor:
+        file_infos = database.get_unregistered_files(cursor)
+        if not file_infos:
+            print("No unregistered files in database")
+            return
+
+        file_infos_not_found = register_file_infos(shutdown_event, verbose, config, file_infos)
+        ids_to_remove = [fi.id for fi in file_infos if fi not in file_infos_not_found]
+        if ids_to_remove:
+            print("Removing files that got registered from the database")
+            database.remove_files(cursor, ids_to_remove)
 
 
 if __name__ == "__main__":

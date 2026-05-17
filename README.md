@@ -4,8 +4,9 @@ AniDB-mv, or amv for short, is a command line client for AniDB. It is
 similar to the standard mv command in Unix, but in addition to moving
 the files, it also tries to register them at AniDB. If a file isn't
 found at AniDB, information about it is saved in a local database.
-Use `amv -r` (or `--retry-unregistered`) to attempt to register the
-files in the database again.
+Run `amv-db retry` later to attempt to register those files again, or
+pass `-r`/`--retry-unregistered` to `amv` to retry them as part of the
+next move.
 
 The project consists of two commands: `amv` and `amv-db`. `amv` is the command
 for moving files (or for registering them without moving them), and `amv-db`
@@ -70,4 +71,6 @@ ruff format --check
 
 * To clear files that failed to get registered: `amv-db clear`
 
-* To retry registering files saved in the database: `amv -r file1.mkv /my/files/`
+* To retry registering files saved in the database: `amv-db retry`
+
+* To retry registering during a move: `amv -r file1.mkv /my/files/`

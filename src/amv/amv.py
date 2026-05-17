@@ -16,10 +16,10 @@ from .network.client import UdpClient
 
 
 def main() -> None:
-    shutdown_event = _setup_shutdown_event()
+    shutdown_event = setup_shutdown_event()
 
     args = _parse_args()
-    config = _read_config()
+    config = read_config()
 
     files_and_dirs = _remove_duplicates(args.files)
     files = _get_paths_to_register(files_and_dirs)
@@ -46,7 +46,7 @@ def main() -> None:
         _move_files(files_and_dirs, args.directory)
 
 
-def _setup_shutdown_event() -> Event:
+def setup_shutdown_event() -> Event:
     shutdown_event = Event()
 
     def signal_handler(*_):
@@ -101,7 +101,7 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
-def _read_config() -> dict[str, str | int]:
+def read_config() -> dict[str, str | int]:
     xdg_config_home = os.getenv("XDG_CONFIG_HOME", "~/.config")
     config_path = os.path.expanduser(os.path.join(xdg_config_home, "amv/config"))
     if not os.path.exists(config_path):
@@ -186,6 +186,17 @@ def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue
 def _add_unregistered_files(file_info_queue: Queue, unregistered_file_infos: list[FileInfo]) -> None:
     for file_info in unregistered_file_infos:
         file_info_queue.put(file_info)
+
+
+def register_file_infos(
+    shutdown_event: Event, verbose: bool, config: dict, file_infos: list[FileInfo]
+) -> list[FileInfo]:
+    queue: Queue = Queue()
+    for file_info in file_infos:
+        queue.put(file_info)
+    queue.put(None)
+    with UdpClient(shutdown_event, verbose, config, queue) as client:
+        return client.register_file_infos()
 
 
 def _report_unregistered_in_database(unregistered_file_infos: list[FileInfo]) -> None:
