@@ -102,7 +102,7 @@ class UdpClient:
                 pass
             case codes.LOGIN_ACCEPTED_NEW_VERSION:
                 print(
-                    "This program uses an outdated version of the AniDB UDP protocol."
+                    "This program uses an outdated version of the AniDB UDP protocol. "
                     f"Please download a new version of it from {SOFTWARE_URL}",
                     file=sys.stderr,
                 )
