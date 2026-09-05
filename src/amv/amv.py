@@ -61,13 +61,14 @@ def setup_shutdown_event() -> Event:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Move and register files on AniDB")
     parser.add_argument(
+        "-u",
         "--unwatched",
         action="store_false",
         dest="watched",
         default=True,
         help="Mark the files as not watched",
     )
-    parser.add_argument("--external", action="store_true", help="Mark the files as stored externally")
+    parser.add_argument("-e", "--external", action="store_true", help="Mark the files as stored externally")
     parser.add_argument("-v", "--verbose", action="store_true", help="Print AniDB protocol messages")
     parser.add_argument(
         "-n",
@@ -78,7 +79,7 @@ def _parse_args() -> argparse.Namespace:
         help="Register the files without moving them",
     )
     parser.add_argument(
-        "-r",
+        "-R",
         "--retry-unregistered",
         action="store_true",
         help="Also retry files saved in the database",

@@ -133,7 +133,7 @@ class AmvTest(TestCase):
         self.move_mock.assert_not_called()
         self.add_unregistered_files_mock.assert_not_called()
 
-    @patch("sys.argv", ["amv", "-r", "file3", "file4", "dir"])
+    @patch("sys.argv", ["amv", "-R", "file3", "file4", "dir"])
     def test_register_file_success_with_files_in_db(self):
         self.get_unregistered_files_mock.return_value = [
             create_file_info("/tmp/file1", id_=1),
@@ -147,7 +147,7 @@ class AmvTest(TestCase):
 
         self.move_mock.assert_has_calls([call("file3", "dir"), call("file4", "dir")])
 
-    @patch("sys.argv", ["amv", "-r", "file3", "dir"])
+    @patch("sys.argv", ["amv", "-R", "file3", "dir"])
     def test_db_files_removed_after_successful_registration(self):
         self.get_unregistered_files_mock.return_value = [
             create_file_info("/tmp/file1", id_=1),
@@ -162,7 +162,7 @@ class AmvTest(TestCase):
         self.remove_files_mock.assert_has_calls([call(ANY, [1])])
         self.add_unregistered_files_mock.assert_not_called()
 
-    @patch("sys.argv", ["amv", "-r", "file3", "dir"])
+    @patch("sys.argv", ["amv", "-R", "file3", "dir"])
     def test_new_unregistered_files_added_to_db_alongside_existing(self):
         self.get_unregistered_files_mock.return_value = [
             create_file_info("/tmp/file1", id_=1),
@@ -177,7 +177,7 @@ class AmvTest(TestCase):
         self.remove_files_mock.assert_not_called()
         self.add_unregistered_files_mock.assert_has_calls([call(ANY, [create_file_info("file3")])])
 
-    @patch("sys.argv", ["amv", "-r", "file3", "dir"])
+    @patch("sys.argv", ["amv", "-R", "file3", "dir"])
     def test_unregistered_kept_in_database_on_failure(self):
         self.get_unregistered_files_mock.return_value = [
             create_file_info("/tmp/file1", id_=1),
@@ -249,7 +249,7 @@ class AmvTest(TestCase):
         printed = " ".join(str(c.args[0]) for c in print_mock.call_args_list if c.args)
         self.assertNotIn("unregistered", printed)
 
-    @patch("sys.argv", ["amv", "-r", "file3", "dir"])
+    @patch("sys.argv", ["amv", "-R", "file3", "dir"])
     @patch("amv.amv.Queue")
     def test_retry_flag_queues_db_files(self, queue_mock):
         self.get_unregistered_files_mock.return_value = [

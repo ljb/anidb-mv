@@ -72,8 +72,17 @@ class AmvParseArgsTest(TestCase):
         self.assertTrue(args.move)
         self.assertFalse(args.retry_unregistered)
 
-    def test_flags_can_be_toggled(self):
-        args = self.parse(["--unwatched", "--external", "-v", "-r", "-n", "episode.mkv"])
+    def test_flags_can_be_toggled_with_long_options(self):
+        args = self.parse(["--unwatched", "--external", "--verbose", "--retry-unregistered", "--no-move", "e.mkv"])
+
+        self.assertFalse(args.watched)
+        self.assertTrue(args.external)
+        self.assertTrue(args.verbose)
+        self.assertFalse(args.move)
+        self.assertTrue(args.retry_unregistered)
+
+    def test_every_flag_has_a_short_option(self):
+        args = self.parse(["-u", "-e", "-v", "-R", "-n", "episode.mkv"])
 
         self.assertFalse(args.watched)
         self.assertTrue(args.external)
