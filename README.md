@@ -5,7 +5,7 @@ similar to the standard mv command in Unix, but in addition to moving
 the files, it also tries to register them at AniDB. If a file isn't
 found at AniDB, information about it is saved in a local database.
 Run `amv-db retry` later to attempt to register those files again, or
-pass `-r`/`--retry-unregistered` to `amv` to retry them as part of the
+pass `-R`/`--retry-unregistered` to `amv` to retry them as part of the
 next move.
 
 The project consists of two commands: `amv` and `amv-db`. `amv` is the command
@@ -60,6 +60,11 @@ ruff check
 ruff format --check
 ```
 
+### Changelog
+
+See [CHANGELOG.md](CHANGELOG.md). Note that 1.0.0 contains breaking changes if you
+are coming from 0.1.
+
 ### Examples of Usage
 * To move files and register them at AniDB: `amv file1.mkv file2.mkv /my/files/`
 
@@ -73,7 +78,7 @@ ruff format --check
 
 * To retry registering files saved in the database: `amv-db retry`
 
-* To retry registering during a move: `amv -r file1.mkv /my/files/`
+* To retry registering during a move: `amv -R file1.mkv /my/files/`
 
 * To replace a broken pre-release with the official release while keeping
   the original watch date: `amv-db replace /anime/broken.mkv /downloads/official.mkv`
