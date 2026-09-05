@@ -15,11 +15,15 @@ class AmvDbRetryTest(TestCase):
         self.get_unregistered_files_mock = patch("amv.database.get_unregistered_files", return_value=[]).start()
 
         patch("amv.database.open_database").start()
+        # amv_db does "from .amv import read_config, setup_shutdown_event", so the names
+        # to patch live in amv.amv_db. Patching amv.amv leaves these calls untouched, and
+        # the tests then read the developer's real ~/.amvrc -- which is why they passed
+        # locally and failed in CI, where no config file exists.
         patch(
-            "amv.amv.read_config",
+            "amv.amv_db.read_config",
             return_value={"username": "u", "password": "p", "local_port": 9000},
         ).start()
-        patch("amv.amv.setup_shutdown_event").start()
+        patch("amv.amv_db.setup_shutdown_event").start()
 
         self.client_mock.return_value.__enter__.return_value.register_file_infos.return_value = []
 
@@ -105,11 +109,15 @@ class AmvDbReplaceTest(TestCase):
         ).start()
 
         patch("amv.database.open_database").start()
+        # amv_db does "from .amv import read_config, setup_shutdown_event", so the names
+        # to patch live in amv.amv_db. Patching amv.amv leaves these calls untouched, and
+        # the tests then read the developer's real ~/.amvrc -- which is why they passed
+        # locally and failed in CI, where no config file exists.
         patch(
-            "amv.amv.read_config",
+            "amv.amv_db.read_config",
             return_value={"username": "u", "password": "p", "local_port": 9000},
         ).start()
-        patch("amv.amv.setup_shutdown_event").start()
+        patch("amv.amv_db.setup_shutdown_event").start()
         patch("amv.amv_db.os.path.isfile", return_value=True).start()
         patch("amv.amv_db.os.path.getsize", side_effect=self._fake_getsize).start()
         patch("amv.amv_db.ed2k_of_path", side_effect=self._fake_ed2k).start()
