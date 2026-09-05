@@ -38,7 +38,9 @@ def _parse_args() -> argparse.Namespace:
         "replace",
         help="Replace an unregistered file with a new release, inheriting its watch date",
     )
-    replace_parser.add_argument("existing", help="Existing file (typically a broken pre-release) already in the database")
+    replace_parser.add_argument(
+        "existing", help="Existing file (typically a broken pre-release) already in the database"
+    )
     replace_parser.add_argument("new", help="New file to register and put in place of the existing one")
     replace_parser.add_argument("-v", "--verbose", action="store_true", help="Print AniDB protocol messages")
 
