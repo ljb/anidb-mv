@@ -13,7 +13,11 @@ Agent-facing notes for working in this repo. README has the user-facing overview
 - Tests: `pytest -q` (config in `pyproject.toml` sets `pythonpath = ["src"]`).
 - Lint: `ruff check`
 - Format check: `ruff format --check`
-- No CI is configured. Local checks are the only gate before publishing — run all three before declaring a task done.
+- CI runs all three on push and pull request (`.github/workflows/python-tests.yml`): pytest on
+  Python 3.10 through 3.14, plus a lint job running `ruff check` and `ruff format --check`.
+  Run them locally before declaring a task done rather than waiting for CI.
+- `.github/workflows/publish.yml` publishes to PyPI via trusted publishing when a GitHub
+  release is published.
 
 ## Project layout
 
