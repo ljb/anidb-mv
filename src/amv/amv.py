@@ -91,10 +91,10 @@ def _parse_args() -> argparse.Namespace:
 
     if args.move:
         if len(args.files) < 2:
-            print("A destination directory is required (use --no-move to skip moving)")
+            print("A destination directory is required (use --no-move to skip moving)", file=sys.stderr)
             sys.exit(1)
         elif not os.path.isdir(args.files[-1]):
-            print(f"{args.files[-1]} is not a directory")
+            print(f"{args.files[-1]} is not a directory", file=sys.stderr)
             sys.exit(1)
         args.directory = args.files.pop()
 
@@ -113,7 +113,8 @@ def read_config() -> dict[str, str | int]:
                 "[anidb]\n"
                 "local_port=9000\n"
                 "username=myusername\n"
-                "password=mypassword"
+                "password=mypassword",
+                file=sys.stderr,
             )
             sys.exit(1)
 
