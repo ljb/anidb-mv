@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [
   {name = "Jonas Bengtsson", email = "jonas@bengtsson.cc"},
 ]
-urls = {Homepage = "https://github.com/ljb/anidb-mv"}
+urls = {Homepage = "https://github.com/ljb/anidb-mv", Changelog = "https://github.com/ljb/anidb-mv/blob/master/CHANGELOG.md"}
 dependencies = [
   "pycryptodomex>=3.23",
 ]
