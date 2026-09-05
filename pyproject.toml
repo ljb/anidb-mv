@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "1.0.0"
 description = "Command line client for AniDB"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "GPLv3"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 authors = [
   {name = "Jonas Bengtsson", email = "jonas@bengtsson.cc"},
 ]
