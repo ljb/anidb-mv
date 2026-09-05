@@ -26,25 +26,41 @@ def main() -> None:
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Manage files that failed to register with AniDB")
-    subparsers = parser.add_subparsers(dest="action")
-    subparsers.add_parser("list")
-    subparsers.add_parser("clear")
-    remove_parser = subparsers.add_parser("remove")
-    remove_parser.add_argument("ids", nargs="+", type=int)
-    retry_parser = subparsers.add_parser("retry")
-    retry_parser.add_argument("-v", "--verbose", action="store_true", help="Print AniDB protocol messages")
+    # Shared so that -v works both before and after the subcommand. SUPPRESS keeps the
+    # subparser from writing its own default over a -v that was given ahead of it.
+    verbose = argparse.ArgumentParser(add_help=False)
+    verbose.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Print AniDB protocol messages",
+    )
+
+    parser = argparse.ArgumentParser(description="Manage files that failed to register with AniDB", parents=[verbose])
+
+    subparsers = parser.add_subparsers(dest="action", required=True, metavar="action")
+    subparsers.add_parser("list", help="List the files that failed to register")
+    subparsers.add_parser("clear", help="Remove every file from the database")
+    remove_parser = subparsers.add_parser("remove", help="Remove individual files from the database by id")
+    remove_parser.add_argument("ids", nargs="+", type=int, help="Ids as shown by amv-db list")
+    subparsers.add_parser("retry", parents=[verbose], help="Try registering the files with AniDB again")
     replace_parser = subparsers.add_parser(
         "replace",
+        parents=[verbose],
         help="Replace an unregistered file with a new release, inheriting its watch date",
     )
     replace_parser.add_argument(
         "existing", help="Existing file (typically a broken pre-release) already in the database"
     )
     replace_parser.add_argument("new", help="New file to register and put in place of the existing one")
-    replace_parser.add_argument("-v", "--verbose", action="store_true", help="Print AniDB protocol messages")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    # SUPPRESS leaves the attribute off entirely unless -v was given somewhere. Note that
+    # parser.set_defaults() cannot be used instead: it mutates the shared action object,
+    # which would put the default back on the subparsers and undo the whole arrangement.
+    args.verbose = getattr(args, "verbose", False)
+    return args
 
 
 def _format_with_unit(number: float, unit: str) -> str:
