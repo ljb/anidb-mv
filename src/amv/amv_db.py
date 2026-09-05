@@ -135,13 +135,13 @@ def _handle_retry(verbose: bool) -> None:
 
 def _handle_replace(existing_path: str, new_path: str, verbose: bool) -> None:
     if not os.path.isfile(existing_path):
-        print(f"{existing_path} is not a file")
+        print(f"{existing_path} is not a file", file=sys.stderr)
         sys.exit(1)
     if not os.path.isfile(new_path):
-        print(f"{new_path} is not a file")
+        print(f"{new_path} is not a file", file=sys.stderr)
         sys.exit(1)
     if os.path.abspath(existing_path) == os.path.abspath(new_path):
-        print("existing and new must be different files")
+        print("existing and new must be different files", file=sys.stderr)
         sys.exit(1)
 
     print(f"Hashing {os.path.basename(existing_path)}")
@@ -158,7 +158,7 @@ def _handle_replace(existing_path: str, new_path: str, verbose: bool) -> None:
             if fi.ed2k == existing_ed2k and fi.size == existing_size
         ]
         if not matching:
-            print(f"No matching unregistered file found in database for {existing_path}")
+            print(f"No matching unregistered file found in database for {existing_path}", file=sys.stderr)
             sys.exit(1)
         old_file_info = matching[0]
 
@@ -174,7 +174,7 @@ def _handle_replace(existing_path: str, new_path: str, verbose: bool) -> None:
 
         not_found = register_file_infos(shutdown_event, verbose, config, [new_file_info])
         if new_file_info in not_found:
-            print("Registration of new file failed; leaving everything unchanged")
+            print("Registration of new file failed; leaving everything unchanged", file=sys.stderr)
             sys.exit(1)
 
         database.remove_files(cursor, [old_file_info.id])

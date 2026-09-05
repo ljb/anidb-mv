@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import sys
 import time
 from queue import Queue
 from threading import Event
@@ -102,7 +103,8 @@ class UdpClient:
             case codes.LOGIN_ACCEPTED_NEW_VERSION:
                 print(
                     "This program uses an outdated version of the AniDB UDP protocol."
-                    f"Please download a new version of it from {SOFTWARE_URL}"
+                    f"Please download a new version of it from {SOFTWARE_URL}",
+                    file=sys.stderr,
                 )
             case _:
                 self._raise_error(response)
@@ -117,12 +119,12 @@ class UdpClient:
             self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
             datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
         except socket.timeout:
-            print(f"Timed out registering {file_info.path}")
+            print(f"Timed out registering {file_info.path}", file=sys.stderr)
             return False
         response = messages.parse_message(datagram)
         match response["number"]:
             case codes.NO_SUCH_FILE_CODE:
-                print(f"No such file {file_info.path}")
+                print(f"No such file {file_info.path}", file=sys.stderr)
                 return False
             case codes.FILE_ALREADY_IN_MYLIST:
                 print(f"File {file_info.path} already registered")

@@ -1,3 +1,4 @@
+import sys
 from unittest import TestCase
 from unittest.mock import ANY, call, patch
 
@@ -196,6 +197,29 @@ class AmvDbReplaceTest(TestCase):
 
         self.move_mock.assert_called_once_with("/dl/episode.mkv", "/anime/episode.mkv")
         self.os_remove_mock.assert_not_called()
+
+    def test_replace_errors_go_to_stderr(self):
+        """Regression test: these used to go to stdout, so redirecting output hid them."""
+        cases = [
+            (["replace", "/anime/broken.mkv", "/anime/broken.mkv"], "must be different files", None),
+            (
+                ["replace", "/anime/broken.mkv", "/dl/new.mkv"],
+                "is not a file",
+                lambda p: p != "/anime/broken.mkv",
+            ),
+        ]
+
+        for argv, expected, isfile in cases:
+            with self.subTest(expected=expected):
+                if isfile is not None:
+                    patch("amv.amv_db.os.path.isfile", side_effect=isfile).start()
+                with patch("sys.argv", ["amv-db", *argv]), patch("builtins.print") as print_mock:
+                    with self.assertRaises(SystemExit):
+                        amv_db.main()
+
+                call = print_mock.call_args_list[-1]
+                self.assertIn(expected, str(call.args[0]))
+                self.assertIs(sys.stderr, call.kwargs.get("file"))
 
     @patch("sys.argv", ["amv-db", "replace", "/anime/broken.mkv", "/anime/broken.mkv"])
     def test_replace_same_path_rejected(self):

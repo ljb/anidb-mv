@@ -177,9 +177,9 @@ def _process_files(worker_settings: dict, shutdown_event: Event, file_info_queue
                     )
                 )
             except IOError as e:
-                print(f"Failed to process {file_name}: {e}")
+                print(f"Failed to process {file_name}: {e}", file=sys.stderr)
     except Exception as exception:
-        print(f"Received exception {exception} while processing files")
+        print(f"Received exception {exception} while processing files", file=sys.stderr)
         shutdown_event.set()
     finally:
         file_info_queue.put(None)
@@ -242,7 +242,7 @@ def _move_files(files: list[str], directory: str) -> None:
         try:
             shutil.move(file_name, directory)
         except (shutil.Error, FileNotFoundError) as e:
-            print(f"Failed to move {file_name}: {e}")
+            print(f"Failed to move {file_name}: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
