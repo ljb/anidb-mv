@@ -26,5 +26,31 @@ jobs:
       - name: Build package
         run: python -m build
 
+      # PyPI never lets a version be uploaded twice, so a tag that disagrees with
+      # pyproject.toml cannot be undone -- it burns the version number.
+      - name: Check the tag matches what was built
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'EOF'
+          import os
+          import pathlib
+          import sys
+          import tomllib
+
+          tag = os.environ["TAG"]
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          built = sorted(path.name for path in pathlib.Path("dist").iterdir())
+
+          if tag.removeprefix("v") != version:
+              sys.exit(f"Release is tagged {tag}, but pyproject.toml says {version}")
+
+          stray = [name for name in built if f"-{version}-" not in name and f"-{version}." not in name]
+          if stray:
+              sys.exit(f"dist/ holds {stray}, which is not version {version}")
+
+          print(f"{tag} matches version {version}: {', '.join(built)}")
+          EOF
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
