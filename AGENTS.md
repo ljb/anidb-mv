@@ -32,5 +32,25 @@ Agent-facing notes for working in this repo. README has the user-facing overview
 - User-facing output goes through `print`, not logging. Tests assert on `print` calls when they care about the output.
 - `database` tests run against `sqlite3.connect(":memory:")` — do not mock sqlite. Mocking the DB layer is reserved for CLI/integration tests in `test_cli.py`.
 - `test_cli.py` uses `patch(...).start()` in `setUp` with `addCleanup(patch.stopall)` rather than per-test decorators. Follow the existing pattern when adding tests there.
-- Patches target `amv.amv.<name>` (the import site), not the source module. See commit 141e09b for rationale.
-- The DB-retry flag is opt-in (`-r` / `--retry-unregistered`). Default behaviour is to print a one-line summary and skip the retry — keep that contract intact when touching `main()`.
+- Patches target the import site, not the module a name is defined in. For code under test in
+  `amv.amv` that is `amv.amv.<name>`; `amv_db` does `from .amv import read_config`, so its tests
+  must patch `amv.amv_db.read_config`. Getting this wrong is not loud -- the real function simply
+  runs. See 141e09b for the rationale and a89c7ed for what it costs to get it wrong.
+- The DB-retry flag is opt-in (`-R` / `--retry-unregistered`). Default behaviour is to print a one-line summary and skip the retry — keep that contract intact when touching `main()`.
+
+## Changelog
+
+`CHANGELOG.md` documents each release against the previous one on PyPI, not against the previous
+tag -- several versions were tagged here and never published.
+
+Bold marks entries where a change to existing behaviour is the point, so an upgrader can scan for
+what will bite them:
+
+- **Removed, Changed, Fixed**: bold the first sentence of entries a user of the command notices.
+  Leave plain the ones about packaging, internals or the Python API -- the src layout, the SPDX
+  licence field, a dataclass replacing a dict, a test-only fix.
+- **Added**: no bold. Everything in it is new by definition, so emphasis marks nothing.
+- The bolded sentence states the effect; the explanation follows in plain text.
+
+When you change user-visible behaviour, add the entry in the same commit. The date under the
+version heading is the release date -- set it when you cut the release, not when you write the entry.

@@ -55,9 +55,9 @@ since 0.1.
   `~/.amvrc` if that exists.
 - **The database lives in `$XDG_DATA_HOME/amv/amv.sqlite3`**, unless
   `~/.amv.sqlite3` already exists, in which case it keeps being used.
-- ED2K hashing uses pycryptodomex instead of `hashlib.new("md4")`, which modern
-  OpenSSL builds no longer provide. This adds a dependency but is what makes the
-  program run at all on a current system.
+- **ED2K hashing uses pycryptodomex** instead of `hashlib.new("md4")`, which
+  modern OpenSSL builds no longer provide. This adds a dependency but is what
+  makes the program run at all on a current system.
 - The package moved to a `src/` layout with console-script entry points declared
   in `pyproject.toml`, replacing `setup.py` and the `scripts/` directory.
 - The license is declared as the SPDX expression `GPL-3.0-or-later` rather than
@@ -74,11 +74,12 @@ since 0.1.
 - **`amv` could hang forever.** If the worker thread raised an unexpected
   exception the queue sentinel was never sent, and registration blocked
   indefinitely.
-- A socket leak and missing timeout handling in the UDP client. A registration
-  that got no response used to wait forever; it now reports the timeout and
-  moves on.
-- Files that had been registered successfully were not always removed from the
-  database, because `FileInfo` equality included the database id.
+- **A registration that got no response waited forever.** The UDP client had no
+  timeout, and leaked the socket besides. It now reports the timeout and moves
+  on.
+- **Files that registered successfully were not always removed from the
+  database**, so they kept showing up in `amv-db list`. `FileInfo` equality
+  included the database id.
 - The sdist shipped `tests/test_*.py` without `tests/conftest.py`, so four of the
   seven test files could not even be imported from it.
 - `ruff check` and `ruff format --check` were failing on the default branch.
@@ -87,8 +88,9 @@ since 0.1.
 
 ### Removed
 
-- `--no-db-report`, replaced by the inverted `-R`/`--retry-unregistered`.
-- Support for Python versions before 3.10.
+- **`--no-db-report`**, replaced by the inverted `-R`/`--retry-unregistered`.
+- **Support for Python versions before 3.10.** `pip install` now fails on older
+  interpreters rather than installing something that cannot run.
 
 ## [0.1] - 2018-08-12
 
