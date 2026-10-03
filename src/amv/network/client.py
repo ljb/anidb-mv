@@ -113,15 +113,67 @@ class UdpClient:
     def _logout(self) -> None:
         self._send_with_delay(messages.logout_message())
 
+    def _send_and_receive(self, datagram: bytes) -> dict[str, str | int]:
+        self._send_with_delay(datagram)
+        response = self._receive()
+        self._print_if_verbose_mode("Received response", response)
+        return response
+
+    def get_mylist_entry(self, path: str, size: int, ed2k: str) -> messages.MylistEntry | None:
+        """Returns the MyList entry for the file, or None if the file is not in MyList."""
+        self._print_if_verbose_mode(f"Looking up MyList entry for {path}")
+        try:
+            response = self._send_and_receive(messages.mylist_message(size, ed2k, self._session_id))
+        except socket.timeout:
+            print(f"Timed out looking up {path}", file=sys.stderr)
+            return None
+        match response["number"]:
+            case codes.MYLIST:
+                return messages.parse_mylist_entry(response["data"])
+            case codes.NO_SUCH_ENTRY | codes.NO_SUCH_FILE_CODE:
+                return None
+            case _:
+                self._raise_error(response)
+
+    def delete_mylist_entry(self, path: str, size: int, ed2k: str) -> bool:
+        self._print_if_verbose_mode(f"Removing {path} from MyList")
+        try:
+            response = self._send_and_receive(messages.mylistdel_message(size, ed2k, self._session_id))
+        except socket.timeout:
+            print(f"Timed out removing {path} from MyList", file=sys.stderr)
+            return False
+        match response["number"]:
+            case codes.MYLIST_ENTRY_DELETED:
+                print(f"Removed {path} from MyList")
+                return True
+            case codes.NO_SUCH_MYLIST_ENTRY | codes.NO_SUCH_FILE_CODE:
+                print(f"{path} was not in MyList", file=sys.stderr)
+                return False
+            case _:
+                self._raise_error(response)
+
     def _register_file(self, file_info: FileInfo) -> bool:
+        return self._add_to_mylist(file_info, edit_existing=False)
+
+    def register_replacement(self, file_info: FileInfo) -> bool:
+        """
+        Registers the file like _register_file, but a file that is already in MyList gets
+        its entry updated with the watch date and state in file_info instead of being left
+        as it is. A replacement inherits the old file's watch date, and that has to win
+        even when the new file was registered on its own earlier.
+        """
+        return self._add_to_mylist(file_info, edit_existing=True)
+
+    def _add_to_mylist(self, file_info: FileInfo, edit_existing: bool) -> bool:
         self._print_if_verbose_mode(f"Registering file {file_info.path}")
         try:
-            self._send_with_delay(messages.mylistadd_message(file_info, self._session_id))
-            datagram, _ = self._socket.recvfrom(MAX_DATAGRAM_SIZE)
+            response = self._send_and_receive(messages.mylistadd_message(file_info, self._session_id))
+            if edit_existing and response["number"] == codes.FILE_ALREADY_IN_MYLIST:
+                self._print_if_verbose_mode(f"{file_info.path} is already in MyList, updating the entry")
+                response = self._send_and_receive(messages.mylistadd_message(file_info, self._session_id, edit=True))
         except socket.timeout:
             print(f"Timed out registering {file_info.path}", file=sys.stderr)
             return False
-        response = messages.parse_message(datagram)
         match response["number"]:
             case codes.NO_SUCH_FILE_CODE:
                 print(f"No such file {file_info.path}", file=sys.stderr)
@@ -131,6 +183,9 @@ class UdpClient:
                 return True
             case codes.MYLIST_ENTRY_ADDED:
                 print(f"File {file_info.path} registered successfully")
+                return True
+            case codes.MYLIST_ENTRY_EDITED:
+                print(f"Updated the MyList entry for {file_info.path}")
                 return True
             case _:
                 self._raise_error(response)
