@@ -13,8 +13,14 @@ Agent-facing notes for working in this repo. README has the user-facing overview
 - Tests: `pytest -q` (config in `pyproject.toml` sets `pythonpath = ["src"]`).
 - Lint: `ruff check`
 - Format check: `ruff format --check`
-- CI runs all three on push and pull request (`.github/workflows/python-tests.yml`): pytest on
-  Python 3.10 through 3.14, plus a lint job running `ruff check` and `ruff format --check`.
+- Smoke test of the installed package: `python tests/smoke.py` (needs a built `amv` on PATH, e.g.
+  `pipx install --force .`). It never talks to AniDB. Run it when touching packaging,
+  `pyproject.toml`, `MANIFEST.in` or the entry points -- pytest runs against `src/` and
+  cannot see whether the built package installs and starts.
+- CI runs all of these on push and pull request (`.github/workflows/python-tests.yml`): pytest on
+  Python 3.10 through 3.14, a lint job running `ruff check` and `ruff format --check`, and a
+  build job that builds the package, runs `twine check`, checks the sdist contents and runs
+  `tests/smoke.py` against the wheel installed in a clean venv.
   Run them locally before declaring a task done rather than waiting for CI.
 - `.github/workflows/publish.yml` publishes to PyPI via trusted publishing when a GitHub
   release is published.

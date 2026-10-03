@@ -60,6 +60,13 @@ ruff check
 ruff format --check
 ```
 
+There is also a smoke test that exercises the installed commands rather than
+the source tree. It does not talk to AniDB:
+```
+pipx install --force .
+python tests/smoke.py
+```
+
 ### Changelog
 
 See [CHANGELOG.md](CHANGELOG.md). Note that 1.0.0 contains breaking changes if you
