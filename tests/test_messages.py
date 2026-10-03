@@ -122,3 +122,18 @@ class ParseMylistEntryTest(TestCase):
     def test_too_few_fields(self):
         with self.assertRaises(AnidbProtocolException):
             messages.parse_mylist_entry("1|2|3")
+
+
+class RedactTest(TestCase):
+    def test_password_is_hidden_in_auth_message(self):
+        rendered = messages.redact(messages.auth_message("user", "s3cret&pass"))
+
+        self.assertNotIn("s3cret", rendered)
+        self.assertIn("pass=***", rendered)
+        self.assertIn("user=user", rendered)
+        self.assertIn("protover=", rendered)
+
+    def test_other_messages_are_rendered_as_is(self):
+        datagram = messages.mylist_message(1337, "a" * 32, "sess")
+
+        self.assertEqual(str(datagram), messages.redact(datagram))

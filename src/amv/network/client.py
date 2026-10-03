@@ -78,7 +78,7 @@ class UdpClient:
         return time.time() - self._start_time > EXTENDED_PERIOD_OF_TIME
 
     def _send_with_delay(self, datagram: bytes) -> None:
-        self._print_if_verbose_mode(f"Sending {datagram}")
+        self._print_if_verbose_mode(f"Sending {messages.redact(datagram)}")
         delay = self._get_delay_and_decrease_counter()
         time.sleep(delay)
         self._socket.sendto(datagram, (ANIDB_HOST, ANIDB_PORT))

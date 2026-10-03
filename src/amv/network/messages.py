@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
@@ -13,6 +14,14 @@ MESSAGE_ENCODING = "ascii"
 
 def _create_message(name: str, *parameters: tuple[str, str | int]) -> bytes:
     return f"{name} {urlencode(parameters)}".encode(MESSAGE_ENCODING)
+
+
+_PASSWORD_PARAMETER = re.compile(rb"(?<=[ &])pass=[^&]*")
+
+
+def redact(datagram: bytes) -> str:
+    """Renders a datagram for printing, with the password in an AUTH message hidden."""
+    return str(_PASSWORD_PARAMETER.sub(b"pass=***", datagram))
 
 
 def auth_message(username: str, password: str) -> bytes:

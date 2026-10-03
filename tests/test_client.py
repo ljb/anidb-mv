@@ -146,6 +146,21 @@ class UdpClientTest(TestCase):
 
         self.assertFalse(client.delete_mylist_entry("/tmp/file1", 1337, "1" * 32))
 
+    def test_verbose_output_does_not_contain_the_password(self):
+        """Regression test: -v used to echo the AUTH datagram, password included."""
+        self.socket_mock.recvfrom.return_value = self._login_response()
+        config = {**self.config, "password": "hunter2"}
+        client = UdpClient(self.shutdown_event, True, config, self.queue)
+
+        with patch("builtins.print") as print_mock:
+            client.__enter__()
+
+        printed = " ".join(str(arg) for c in print_mock.call_args_list for arg in c.args)
+        self.assertIn("Sending", printed)
+        self.assertIn("user=user", printed)
+        self.assertNotIn("hunter2", printed)
+        self.assertIn("pass=***", printed)
+
     def test_register_replacement_adds_a_new_entry(self):
         client = self._enter_client()
         self.socket_mock.recvfrom.return_value = (b"210 MYLIST ENTRY ADDED", None)

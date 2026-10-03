@@ -42,7 +42,7 @@ since 0.1.
 - `amv-db --help` documents every subcommand. 0.1 had no help text for any of
   them.
 - `-v` is accepted both before and after an `amv-db` subcommand.
-- A test suite of 91 tests, GitHub Actions running it on Python 3.10 through
+- A test suite of 94 tests, GitHub Actions running it on Python 3.10 through
   3.14, and a lint job.
 
 ### Changed
@@ -72,6 +72,10 @@ since 0.1.
 
 ### Fixed
 
+- **`-v` no longer prints the AniDB password.** The AUTH message was echoed
+  verbatim, so every verbose run left the password in the terminal and in
+  anything the output was piped to. It is now shown as `pass=***`. Present in
+  0.1.
 - **`--not-watched` and `--external` did nothing.** Both values were collected
   and then dropped: the MYLISTADD message never included the watched, internal
   or viewdate fields, so every file was registered with AniDB's defaults
