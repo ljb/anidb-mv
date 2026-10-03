@@ -28,16 +28,21 @@ since 0.1.
 
 - `amv-db retry`, which re-registers the files in the database without moving
   anything.
-- `amv-db replace`, which swaps a file in the database for a new release while
-  keeping the original watch date and flags.
+- `-r`/`--replace` on `amv`, which swaps a file for a new release. `amv -r NEW
+  EXISTING` takes its arguments in `mv`'s order: the new file is registered
+  with the old one's watch date and flags, the old entry is
+  removed from MyList (or from the database, if it never got registered), and
+  the new file is moved into the old one's place. A new file that was already
+  registered on its own gets its entry updated, so the old watch date is
+  inherited either way.
 - `-R`/`--retry-unregistered` on `amv`, the opt-in replacement for the old
   always-on behaviour.
 - Short options for every `amv` flag: `-u` for `--unwatched` and `-e` for
   `--external` were previously long-only.
-- `amv-db --help` documents every subcommand. Only `replace` used to have any
-  help text.
+- `amv-db --help` documents every subcommand. 0.1 had no help text for any of
+  them.
 - `-v` is accepted both before and after an `amv-db` subcommand.
-- A test suite of 59 tests, GitHub Actions running it on Python 3.10 through
+- A test suite of 91 tests, GitHub Actions running it on Python 3.10 through
   3.14, and a lint job.
 
 ### Changed

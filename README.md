@@ -80,5 +80,9 @@ are coming from 0.1.
 
 * To retry registering during a move: `amv -R file1.mkv /my/files/`
 
-* To replace a broken pre-release with the official release while keeping
-  the original watch date: `amv-db replace /anime/broken.mkv /downloads/official.mkv`
+* To replace a file with a better release while keeping the original watch
+  date and flags: `amv -r /downloads/new.mkv /anime/old.mkv`. The arguments
+  are in `mv`'s order: the new file first, then the one it replaces. The new
+  file is registered, the old one is dropped from MyList (or from the
+  database, if it never got registered), and the new file is moved into the
+  old one's place.

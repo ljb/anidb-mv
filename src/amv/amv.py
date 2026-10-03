@@ -21,6 +21,10 @@ def main() -> None:
     args = _parse_args()
     config = read_config()
 
+    if args.replace:
+        _replace(shutdown_event, args.existing, args.new, args.verbose, config)
+        return
+
     files_and_dirs = _remove_duplicates(args.files)
     files = _get_paths_to_register(files_and_dirs)
     file_info_queue = Queue()
@@ -84,13 +88,35 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Also retry files saved in the database",
     )
+    parser.add_argument(
+        "-r",
+        "--replace",
+        action="store_true",
+        help="Replace a file with another, in mv's order (amv -r NEW EXISTING): register NEW with EXISTING's "
+        "watch date and flags, drop EXISTING from MyList, and move NEW into EXISTING's place",
+    )
     parser.add_argument("files", nargs="+", help="Files to move and register")
     # Note: this will never match anything and is only here to make the help text look good
     parser.add_argument("directory", help="Destination directory", nargs="?")
 
     args = parser.parse_args()
 
-    if args.move:
+    if args.replace:
+        if len(args.files) != 2:
+            print("--replace takes exactly two files: the new one and the one it replaces", file=sys.stderr)
+            sys.exit(1)
+        given = {
+            "-u": not args.watched,
+            "-e": args.external,
+            "-n": not args.move,
+            "-R": args.retry_unregistered,
+        }
+        incompatible = [flag for flag, is_given in given.items() if is_given]
+        if incompatible:
+            print(f"--replace cannot be combined with {', '.join(incompatible)}", file=sys.stderr)
+            sys.exit(1)
+        args.new, args.existing = args.files
+    elif args.move:
         if len(args.files) < 2:
             print("A destination directory is required (use --no-move to skip moving)", file=sys.stderr)
             sys.exit(1)
@@ -199,6 +225,78 @@ def register_file_infos(
     queue.put(None)
     with UdpClient(shutdown_event, verbose, config, queue) as client:
         return client.register_file_infos()
+
+
+def _replace(shutdown_event: Event, existing_path: str, new_path: str, verbose: bool, config: dict) -> None:
+    """
+    Swaps existing_path for new_path on AniDB and on disk.
+
+    The existing file is looked up in the database of unregistered files first, since that
+    is free and works offline, and in MyList otherwise. The new file is registered with the
+    watch date and flags found there, the old entry is dropped, and only then is anything
+    moved or removed on disk, so a failed registration leaves everything as it was.
+    """
+    if not os.path.isfile(existing_path):
+        print(f"{existing_path} is not a file", file=sys.stderr)
+        sys.exit(1)
+    if not os.path.isfile(new_path):
+        print(f"{new_path} is not a file", file=sys.stderr)
+        sys.exit(1)
+    if os.path.abspath(existing_path) == os.path.abspath(new_path):
+        print("existing and new must be different files", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Hashing {os.path.basename(existing_path)}")
+    existing_size = os.path.getsize(existing_path)
+    existing_ed2k = ed2k_of_path(existing_path)
+    print(f"Hashing {os.path.basename(new_path)}")
+    new_size = os.path.getsize(new_path)
+    new_ed2k = ed2k_of_path(new_path)
+
+    with database.open_database() as cursor:
+        in_database = [
+            fi
+            for fi in database.get_unregistered_files(cursor)
+            if fi.ed2k == existing_ed2k and fi.size == existing_size
+        ]
+
+        with UdpClient(shutdown_event, verbose, config, Queue()) as client:
+            if in_database:
+                old_entry = in_database[0]
+            else:
+                old_entry = client.get_mylist_entry(existing_path, existing_size, existing_ed2k)
+                if old_entry is None:
+                    print(
+                        f"{existing_path} is neither in the database nor in MyList; nothing to replace",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+
+            new_file_info = FileInfo(
+                path=new_path,
+                size=new_size,
+                ed2k=new_ed2k,
+                watched=old_entry.watched,
+                internal=old_entry.internal,
+                view_date=old_entry.view_date,
+            )
+            # A Ctrl-C during registration may still let the reply through, so the shutdown
+            # event is checked as well before anything is removed.
+            if not client.register_replacement(new_file_info) or shutdown_event.is_set():
+                print("Registration of new file failed; leaving everything unchanged", file=sys.stderr)
+                sys.exit(1)
+
+            if in_database:
+                database.remove_files(cursor, [old_entry.id])
+            elif not client.delete_mylist_entry(existing_path, existing_size, existing_ed2k):
+                print(f"Could not remove {existing_path} from MyList; remove it by hand", file=sys.stderr)
+
+    new_destination = os.path.join(os.path.dirname(existing_path), os.path.basename(new_path))
+    print(f"Moving {os.path.basename(new_path)} to {os.path.dirname(existing_path) or '.'}")
+    shutil.move(new_path, new_destination)
+    if os.path.abspath(existing_path) != os.path.abspath(new_destination):
+        print(f"Removing {existing_path}")
+        os.remove(existing_path)
 
 
 def _report_unregistered_in_database(unregistered_file_infos: list[FileInfo]) -> None:

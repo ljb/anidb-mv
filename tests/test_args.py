@@ -90,9 +90,48 @@ class AmvParseArgsTest(TestCase):
         self.assertFalse(args.move)
         self.assertTrue(args.retry_unregistered)
 
+    def test_replace_takes_the_new_file_and_the_one_it_replaces(self):
+        """Same order as mv: the file that moves first, where it goes last."""
+        for flag in ("-r", "--replace"):
+            with self.subTest(flag=flag):
+                args = self.parse([flag, "new.mkv", "episode.mkv"])
+
+                self.assertTrue(args.replace)
+                self.assertEqual("episode.mkv", args.existing)
+                self.assertEqual("new.mkv", args.new)
+
+    def test_replace_does_not_treat_the_last_argument_as_a_destination(self):
+        args = self.parse(["-r", "new.mkv", "destination"])
+
+        self.assertEqual(["new.mkv", "destination"], args.files)
+        self.assertIsNone(args.directory)
+
+    def test_replace_requires_exactly_two_files(self):
+        for argv in (["-r", "new.mkv"], ["-r", "a.mkv", "b.mkv", "c.mkv"]):
+            with self.subTest(argv=argv):
+                code, message, stream = self.parse_expecting_exit(argv)
+
+                self.assertEqual(1, code)
+                self.assertIn("exactly two files", message)
+                self.assertIs(sys.stderr, stream)
+
+    def test_replace_rejects_flags_that_it_would_ignore(self):
+        for flag in ("-u", "-e", "-n", "-R"):
+            with self.subTest(flag=flag):
+                code, message, stream = self.parse_expecting_exit(["-r", flag, "new.mkv", "episode.mkv"])
+
+                self.assertEqual(1, code)
+                self.assertIn(f"cannot be combined with {flag}", message)
+                self.assertIs(sys.stderr, stream)
+
+    def test_replace_lists_every_incompatible_flag_given(self):
+        _, message, _ = self.parse_expecting_exit(["-r", "-u", "-e", "new.mkv", "episode.mkv"])
+
+        self.assertIn("-u, -e", message)
+
 
 class AmvDbParseArgsTest(TestCase):
-    SUBCOMMANDS = ["list", "clear", "remove", "retry", "replace"]
+    SUBCOMMANDS = ["list", "clear", "remove", "retry"]
 
     @staticmethod
     def parse(argv):
@@ -110,15 +149,13 @@ class AmvDbParseArgsTest(TestCase):
     def test_verbose_before_the_subcommand(self):
         """Regression test: -v used to be accepted only after the subcommand."""
         self.assertTrue(self.parse(["-v", "retry"]).verbose)
-        self.assertTrue(self.parse(["-v", "replace", "old.mkv", "new.mkv"]).verbose)
 
     def test_verbose_after_the_subcommand(self):
         self.assertTrue(self.parse(["retry", "-v"]).verbose)
-        self.assertTrue(self.parse(["replace", "old.mkv", "new.mkv", "-v"]).verbose)
 
     def test_verbose_defaults_to_false(self):
         """The shared -v is declared with SUPPRESS, so the attribute has to be filled in."""
-        for argv in (["list"], ["clear"], ["retry"], ["remove", "1"], ["replace", "old.mkv", "new.mkv"]):
+        for argv in (["list"], ["clear"], ["retry"], ["remove", "1"]):
             with self.subTest(argv=argv):
                 self.assertFalse(self.parse(argv).verbose)
 
